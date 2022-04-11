@@ -20,6 +20,8 @@ defmodule Ravix.Ecto.Parser.QueryParser do
 
     case Projection.project(ecto_query, params, {coll, model, pk}) do
       {:find, projection, fields} ->
+        IO.inspect(projection)
+
         %QueryInfo{
           kind: :read,
           fields: fields,
@@ -28,11 +30,12 @@ defmodule Ravix.Ecto.Parser.QueryParser do
     end
   end
 
-  defp find_all(raven_query, query_params, _projection) do
+  defp find_all(raven_query, query_params, projection) do
     query_params
     |> Enum.reduce(raven_query, fn params, acc ->
       append_condition(acc, parse_param(params))
     end)
+    |> parse_projections(projection)
   end
 
   defp from(%EctoQuery{from: %{source: {coll, model}}}) do
@@ -97,4 +100,15 @@ defmodule Ravix.Ecto.Parser.QueryParser do
         RavenQuery.where(query, condition)
     end
   end
+
+  defp parse_projections(%RavenQuery{} = query, projections) when projections == %{}, do: query
+
+  defp parse_projections(%RavenQuery{} = query, projections),
+    do:
+      query
+      |> RavenQuery.select(
+        projections
+        |> Map.filter(fn {_key, value} -> value end)
+        |> Map.keys()
+      )
 end

@@ -3,7 +3,7 @@ defmodule Ravix.Ecto.Parser.Projection do
 
   import Ravix.Ecto.Parser.Shared
 
-  @aggregate_ops [:min, :max, :sum, :avg]
+  @aggregate_ops [:sum]
   @special_ops [:count | @aggregate_ops]
 
   def project(%EctoQuery{select: nil}, _params, _from), do: {:find, %{}, []}

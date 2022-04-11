@@ -32,6 +32,9 @@ defmodule Ecto.Integration.Case do
   use ExUnit.CaseTemplate
 
   alias Ecto.Integration.TestRepo
+  alias Ravix.Ecto.TestStore
+
+  import Ravix.RQL.Query
 
   setup_all do
     :ok
@@ -40,6 +43,11 @@ defmodule Ecto.Integration.Case do
   setup do
     _ = start_supervised!(Ravix)
     _ = start_supervised!(TestRepo)
+
+    {:ok, session_id} = TestStore.open_session()
+    {:ok, _} = from("@all_docs") |> delete_for(session_id)
+    _ = TestStore.close_session(session_id)
+
     :ok
   end
 end
