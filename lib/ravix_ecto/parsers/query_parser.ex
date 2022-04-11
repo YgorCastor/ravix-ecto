@@ -20,22 +20,35 @@ defmodule Ravix.Ecto.Parser.QueryParser do
 
     case Projection.project(ecto_query, params, {coll, model, pk}) do
       {:find, projection, fields} ->
-        IO.inspect(projection)
-
         %QueryInfo{
           kind: :read,
           fields: fields,
-          raven_query: find_all(raven_query, query_params, projection)
+          raven_query: find_all_query(raven_query, query_params, projection)
         }
     end
   end
 
-  defp find_all(raven_query, query_params, projection) do
-    query_params
-    |> Enum.reduce(raven_query, fn params, acc ->
-      append_condition(acc, parse_param(params))
-    end)
+  def delete_all(ecto_query, params) do
+    {_coll, _model, raven_query, pk} = from(ecto_query)
+    params = List.to_tuple(params)
+    query_params = QueryParams.parse(ecto_query, params, pk)
+
+    %QueryInfo{
+      kind: :delete,
+      fields: [],
+      raven_query: delete_all_query(raven_query, query_params)
+    }
+  end
+
+  defp find_all_query(raven_query, query_params, projection) do
+    raven_query
+    |> append_conditions(query_params)
     |> parse_projections(projection)
+  end
+
+  defp delete_all_query(raven_query, query_params) do
+    raven_query
+    |> append_conditions(query_params)
   end
 
   defp from(%EctoQuery{from: %{source: {coll, model}}}) do
@@ -59,6 +72,13 @@ defmodule Ravix.Ecto.Parser.QueryParser do
     operations
     |> Enum.flat_map(&parse_param/1)
     |> Enum.map(fn op -> bool_operation.(op) end)
+  end
+
+  defp append_conditions(raven_query, query_params) do
+    query_params
+    |> Enum.reduce(raven_query, fn params, acc ->
+      append_condition(acc, parse_param(params))
+    end)
   end
 
   defp append_condition(query, conditions) when is_list(conditions) do

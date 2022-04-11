@@ -36,4 +36,8 @@ defmodule Ravix.Ecto.Adapter do
 
   defdelegate insert(adapter_meta, schema_meta, fields, on_conflict, returning, options),
     to: @schema
+
+  defdelegate update(repo, meta, fields, filters, returning, opts), to: @schema
+
+  defdelegate delete(adapter_meta, schema_meta, filters, options), to: @schema
 end

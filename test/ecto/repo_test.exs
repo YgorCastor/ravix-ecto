@@ -85,5 +85,23 @@ defmodule Ecto.Integration.RepoTest do
     test "should throw an error if the prefix is invalid" do
       assert catch_error(TestRepo.all("posts", prefix: "oops"))
     end
+
+    test "should insert, update and delete" do
+      post = %Post{title: "insert, update, delete", visits: 1}
+      meta = post.__meta__
+
+      assert %Post{} = inserted = TestRepo.insert!(post)
+      assert %Post{} = updated = TestRepo.update!(Ecto.Changeset.change(inserted, visits: 2))
+
+      deleted_meta = put_in(meta.state, :deleted)
+      assert %Post{__meta__: ^deleted_meta} = TestRepo.delete!(updated)
+
+      loaded_meta = put_in(meta.state, :loaded)
+      assert %Post{__meta__: ^loaded_meta} = TestRepo.insert!(post)
+
+      post = TestRepo.one(Post)
+      assert post.__meta__.state == :loaded
+      assert post.inserted_at
+    end
   end
 end

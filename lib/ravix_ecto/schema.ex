@@ -2,6 +2,7 @@ defmodule Ravix.Ecto.Schema do
   @behaviour Ecto.Adapter.Schema
 
   require Ecto.Query
+  require OK
 
   alias Ravix.Ecto.Executor
 
@@ -12,6 +13,22 @@ defmodule Ravix.Ecto.Schema do
     case Executor.insert(adapter_meta, document_to_insert) do
       {:ok, _} -> {:ok, []}
       {:error, any} -> {:error, any}
+    end
+  end
+
+  @impl Ecto.Adapter.Schema
+  def update(adapter_meta, _query_meta, fields, filters, _returning, _opts) do
+    case Executor.update_one(adapter_meta, fields, filters) do
+      {:ok, _} -> {:ok, []}
+      err -> err
+    end
+  end
+
+  @impl Ecto.Adapter.Schema
+  def delete(adapter_meta, _schema_meta, filters, _options) do
+    case Executor.delete_one(adapter_meta, filters) do
+      {:ok, _} -> {:ok, []}
+      err -> err
     end
   end
 
@@ -126,6 +143,14 @@ defmodule Ravix.Ecto.Schema do
     IO.inspect(returning, label: :plain_insert)
 
     document(fields, schema)
+  end
+
+  @impl Ecto.Adapter.Schema
+  def update(adapter_meta, _query_meta, fields, filters, _returning, _opts) do
+    case Executor.update_one(adapter_meta, fields, filters) do
+      {:ok, _} -> {:ok, []}
+      err -> err
+    end
   end
 
   @spec document(keyword(), atom()) :: map()

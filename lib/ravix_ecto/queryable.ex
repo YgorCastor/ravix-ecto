@@ -24,6 +24,9 @@ defmodule Ravix.Ecto.Queryable do
           Enum.map(rows, fn row -> process_document(row, query, document_type) end)
 
         {count, parsed_rows}
+
+      %QueryInfo{kind: :delete} = query ->
+        {count, rows} = Executor.query(query.raven_query, adapter_meta)
     end
   end
 
