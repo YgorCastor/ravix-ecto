@@ -19,14 +19,19 @@ defmodule Ravix.Ecto.Queryable do
     case apply(QueryParser, function, [query, params]) do
       %QueryInfo{kind: :read} = query ->
         {count, rows} = Executor.query(query.raven_query, adapter_meta)
-
-        parsed_rows =
-          Enum.map(rows, fn row -> process_document(row, query, document_type) end)
-
-        {count, parsed_rows}
+        {count, Enum.map(rows, fn row -> process_document(row, query, document_type) end)}
 
       %QueryInfo{kind: :delete} = query ->
-        {count, rows} = Executor.query(query.raven_query, adapter_meta)
+        case Executor.query(query.raven_query, adapter_meta, :delete) do
+          {:error, err} -> {:error, err}
+          _ -> {:ok, []}
+        end
+
+      %QueryInfo{kind: :update} = query ->
+        case Executor.query(query.raven_query, adapter_meta, :update) do
+          {:error, err} -> {:error, err}
+          _ -> {:ok, []}
+        end
     end
   end
 

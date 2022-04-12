@@ -6,6 +6,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   end
 
   import Ravix.Ecto.Parser.Shared
+  import Ecto.Changeset
 
   alias Ecto.Query, as: EctoQuery
   alias Ravix.RQL.Query, as: RavenQuery
@@ -26,6 +27,122 @@ defmodule Ravix.Ecto.Parser.QueryParser do
           raven_query: find_all_query(raven_query, query_params, projection)
         }
     end
+  end
+
+  def insert(
+        %{source: coll, schema: schema, prefix: prefix},
+        [[_ | _] | _] = docs,
+        {:nothing, [], conflict_targets},
+        returning,
+        _opts
+      ) do
+    IO.inspect(coll, label: :insert_1)
+    IO.inspect(schema, label: :insert_1)
+    IO.inspect(prefix, label: :insert_1)
+    IO.inspect(docs, label: :insert_1)
+    IO.inspect(conflict_targets, label: :insert_1)
+    IO.inspect(returning, label: :insert_1)
+  end
+
+  def insert(
+        %{source: coll, schema: schema, prefix: prefix},
+        fields,
+        {:nothing, [], conflict_targets},
+        returning,
+        _opts
+      ) do
+    IO.inspect(coll, label: :insert_2)
+    IO.inspect(schema, label: :insert_2)
+    IO.inspect(prefix, label: :insert_2)
+    IO.inspect(fields, label: :insert_2)
+    IO.inspect(conflict_targets, label: :insert_2)
+    IO.inspect(returning, label: :insert_2)
+  end
+
+  def insert(
+        %{schema: schema, source: coll, prefix: prefix},
+        [[_ | _] | _] = docs,
+        {[_ | _] = replace_fields, _, conflict_targets},
+        returning,
+        opts
+      ) do
+    IO.inspect(coll, label: :insert_3)
+    IO.inspect(schema, label: :insert_3)
+    IO.inspect(prefix, label: :insert_3)
+    IO.inspect(docs, label: :insert_3)
+    IO.inspect(conflict_targets, label: :insert_3)
+    IO.inspect(replace_fields, label: :insert_3)
+    IO.inspect(returning, label: :insert_3)
+    IO.inspect(opts, label: :insert_3)
+  end
+
+  def insert(
+        %{schema: schema} = schema_meta,
+        fields,
+        {[_ | _] = replace_fields, _, conflict_targets},
+        returning,
+        opts
+      ) do
+    IO.inspect(schema, label: :insert_4)
+    IO.inspect(fields, label: :insert_4)
+    IO.inspect(conflict_targets, label: :insert_4)
+    IO.inspect(replace_fields, label: :insert_4)
+    IO.inspect(returning, label: :insert_4)
+    IO.inspect(opts, label: :insert_4)
+  end
+
+  def insert(
+        %{source: coll, prefix: prefix},
+        [[_ | _] | _] = docs,
+        {%Ecto.Query{} = query, values, conflict_targets},
+        returning,
+        _opts
+      ) do
+    IO.inspect(coll, label: :insert_5)
+    IO.inspect(prefix, label: :insert_5)
+    IO.inspect(docs, label: :insert_5)
+    IO.inspect(conflict_targets, label: :insert_)
+    IO.inspect(query, label: :insert_5)
+    IO.inspect(values, label: :insert_5)
+    IO.inspect(returning, label: :insert_5)
+  end
+
+  def insert(
+        %{source: coll, prefix: prefix},
+        fields,
+        {%Ecto.Query{} = query, values, conflict_targets},
+        returning,
+        _opts
+      ) do
+    IO.inspect(coll, label: :insert_6)
+    IO.inspect(prefix, label: :insert_6)
+    IO.inspect(fields, label: :insert_6)
+    IO.inspect(conflict_targets, label: :insert_6)
+    IO.inspect(query, label: :insert_6)
+    IO.inspect(values, label: :insert_6)
+    IO.inspect(returning, label: :insert_6)
+  end
+
+  def insert(schema_meta, fields, {:raise, [], []}, returning, _opts),
+    do: plain_insert(schema_meta, fields, returning)
+
+  def insert(schema_meta, fields, {:nothing, [], []}, returning, _opts),
+    do: plain_insert(schema_meta, fields, returning)
+
+  defp plain_insert(%{source: _coll, schema: schema, prefix: _prefix}, fields, _returning) do
+    pk = primary_key(schema)
+    # We don't want to map directly to a struct, it can fuck up field-sources
+    document =
+      cast(struct(schema, %{}), Enum.into(fields, %{}), schema.__schema__(:fields))
+      |> apply_changes()
+
+    op =
+      case fields do
+        [[_ | _] | _] -> :insert_all
+        _ -> :insert
+      end
+
+    {op, pk, document}
   end
 
   def delete_all(ecto_query, params) do

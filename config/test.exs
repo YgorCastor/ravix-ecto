@@ -18,3 +18,5 @@ config :ravix_ecto, Ravix.Ecto.TestStore,
   }
 
 config :ravix_ecto, Ecto.Integration.TestRepo, store: Ravix.Ecto.TestStore
+
+config :logger, level: :error

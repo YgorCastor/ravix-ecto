@@ -6,12 +6,13 @@ defmodule Ravix.Ecto.Executor do
 
   import Ravix.RQL.Query
 
-  def insert(%{repo: repo}, document), do: insert(Keyword.get(repo.config, :store), document)
+  def insert(%{repo: repo}, document, pk),
+    do: insert(Keyword.get(repo.config, :store), document, pk)
 
-  def insert(store, document) do
+  def insert(store, document, pk) do
     OK.for do
       session_id <- store.open_session()
-      _ <- RavixSession.store(session_id, document)
+      _ <- RavixSession.store(session_id, document, Map.get(document, pk))
       updated_store <- RavixSession.save_changes(session_id)
       results = to_keywords(updated_store["Results"])
       _ = store.close_session(session_id)
@@ -80,6 +81,7 @@ defmodule Ravix.Ecto.Executor do
         end
 
       _ = store.close_session(session_id)
+
       parsed_result = parse_raven_result(result, kind)
     after
       parsed_result
@@ -93,6 +95,10 @@ defmodule Ravix.Ecto.Executor do
     count = Map.get(result, "TotalResults")
 
     {count, rows}
+  end
+
+  defp parse_raven_result(result, _) do
+    Map.get(result, "OperationId")
   end
 
   defp to_keywords(results) when is_list(results) do

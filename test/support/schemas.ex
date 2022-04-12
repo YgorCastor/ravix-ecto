@@ -40,6 +40,7 @@ defmodule Ecto.Integration.Post do
     field(:links, {:map, :string})
     field(:intensities, {:map, :float})
     field(:posted, :date)
+    field(:"@metadata", :map, virtual: true)
     has_many(:comments, Ecto.Integration.Comment, on_delete: :delete_all, on_replace: :delete)
     has_many(:force_comments, Ecto.Integration.Comment, on_replace: :delete_if_exists)
     has_many(:ordered_comments, Ecto.Integration.Comment, preload_order: [:text])
@@ -120,10 +121,12 @@ defmodule Ecto.Integration.Permalink do
   """
   use Ecto.Integration.Schema
 
+  @derive {Jason.Encoder, except: [:__meta__]}
   schema "permalinks" do
     field(:url, :string, source: :uniform_resource_locator)
     field(:title, :string)
     field(:posted, :date, virtual: true)
+    field(:"@metadata", :map, virtual: true)
     belongs_to(:post, Ecto.Integration.Post, on_replace: :nilify)
 
     belongs_to(:update_post, Ecto.Integration.Post,
@@ -386,13 +389,8 @@ defmodule Ecto.Integration.Usec do
   end
 end
 
-defimpl Jason.Encoder, for: Ecto.Integration.Post do
-  def encode(struct, opts) do
-    Enum.reduce(Map.from_struct(struct), %{}, fn
-      {k, %Ecto.Association.NotLoaded{}}, acc -> acc
-      {k, v}, acc -> Map.put(acc, k, v)
-    end)
-    |> Map.drop([:__meta__])
-    |> Jason.Encode.map(opts)
+defimpl Jason.Encoder, for: Ecto.Association.NotLoaded do
+  def encode(_struct, _opts) do
+    Jason.encode!(nil)
   end
 end

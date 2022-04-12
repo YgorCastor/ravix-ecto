@@ -5,6 +5,8 @@ defmodule Ecto.Integration.RepoTest do
 
   alias Ecto.Integration.{
     Post,
+    CompositePk,
+    Permalink,
     TestRepo
   }
 
@@ -99,9 +101,29 @@ defmodule Ecto.Integration.RepoTest do
       loaded_meta = put_in(meta.state, :loaded)
       assert %Post{__meta__: ^loaded_meta} = TestRepo.insert!(post)
 
+      :timer.sleep(500)
+
       post = TestRepo.one(Post)
       assert post.__meta__.state == :loaded
       assert post.inserted_at
+    end
+
+    test "should raise an error if multiple primary keys were defined" do
+      assert_raise ArgumentError,
+                   "RavenDB adapter does not support multiple primary keys and [:a, :b] were defined in Ecto.Integration.CompositePk.",
+                   fn ->
+                     TestRepo.insert!(%CompositePk{a: 1, b: 2, name: "first"})
+                   end
+    end
+
+    test "should insert, update and delete with field source" do
+      permalink = %Permalink{url: "url"}
+      assert %Permalink{url: "url"} = inserted = TestRepo.insert!(permalink)
+
+      assert %Permalink{url: "new"} =
+               updated = TestRepo.update!(Ecto.Changeset.change(inserted, url: "new"))
+
+      assert %Permalink{url: "new"} = TestRepo.delete!(updated)
     end
   end
 end
