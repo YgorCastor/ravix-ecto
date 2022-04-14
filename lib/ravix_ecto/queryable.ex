@@ -48,8 +48,11 @@ defmodule Ravix.Ecto.Queryable do
 
   defp get_struct_from_query(_), do: nil
 
-  defp process_document(document, %{fields: fields}, struct) do
+  defp process_document(document, %{fields: fields, pk: pk}, struct) do
     Enum.map(fields, fn
+      {:field, ^pk, _field} ->
+        Map.get(document, "id()")
+
       {:field, name, _field} ->
         if Map.has_key?(document, Atom.to_string(name)) == false && struct != nil do
           Map.get(struct, name)

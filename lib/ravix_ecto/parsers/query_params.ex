@@ -13,6 +13,17 @@ defmodule Ravix.Ecto.Parser.QueryParams do
     |> map_unless_empty
   end
 
+  def parse_update(%EctoQuery{updates: updates} = query, params, pk) do
+    updates
+    |> Enum.flat_map(fn %EctoQuery.QueryExpr{expr: expr} ->
+      Enum.flat_map(expr, fn {key, value} ->
+        check_update_op!(key, query)
+        value |> value(params, pk, query, "update clause")
+      end)
+    end)
+    |> merge_keys(query, "update clause")
+  end
+
   defp merge_keys(keyword, query, place) do
     Enum.reduce(keyword, %{}, fn {key, value}, acc ->
       Map.update(acc, key, value, fn

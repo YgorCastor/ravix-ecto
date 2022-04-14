@@ -36,6 +36,7 @@ defmodule Ecto.Integration.Post do
     field(:wrapped_visits, WrappedInteger)
     field(:intensity, :float)
     field(:bid, :binary_id)
+    field(:uuid, Ecto.Integration.TestRepo.uuid(), autogenerate: true)
     field(:meta, :map)
     field(:links, {:map, :string})
     field(:intensities, {:map, :float})
@@ -244,8 +245,28 @@ defmodule Ecto.Integration.Barebone do
   use Ecto.Integration.Schema
 
   @primary_key false
+  @derive {Jason.Encoder, except: [:__meta__]}
   schema "barebones" do
     field(:num, :integer)
+    field(:"@metadata", :map, virtual: true)
+  end
+end
+
+defmodule Ecto.Integration.Pallet do
+  @moduledoc """
+  This module is used to test:
+
+    * A schema without primary keys and with Id Field
+
+  """
+  use Ecto.Integration.Schema
+
+  @primary_key false
+  @derive {Jason.Encoder, except: [:__meta__]}
+  schema "pallet" do
+    field(:id, :string, default: "pallet/")
+    field(:num, :integer)
+    field(:"@metadata", :map, virtual: true)
   end
 end
 
@@ -386,6 +407,17 @@ defmodule Ecto.Integration.Usec do
   schema "usecs" do
     field(:naive_datetime_usec, :naive_datetime_usec)
     field(:utc_datetime_usec, :utc_datetime_usec)
+  end
+end
+
+defmodule Ecto.Integration.RAW do
+  use Ecto.Integration.Schema
+
+  @derive {Jason.Encoder, except: [:__meta__]}
+  schema "raws" do
+    field(:text, :string)
+    field(:lock_version, :integer, read_after_writes: true)
+    field(:"@metadata", :map, virtual: true)
   end
 end
 

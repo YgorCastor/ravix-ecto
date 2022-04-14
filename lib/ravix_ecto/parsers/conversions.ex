@@ -75,7 +75,7 @@ defmodule Ravix.Ecto.Conversions do
   defp document(doc, pk) do
     map(doc, fn {key, value} ->
       pair(key, value, pk, &from_ecto(&1, pk))
-    end) |> IO.inspect(label: :aaa)
+    end)
   end
 
   defp document(doc, params, pk) do
@@ -92,7 +92,7 @@ defmodule Ravix.Ecto.Conversions do
     end
   end
 
-  defp key(pk, pk), do: :_id
+  defp key(pk, pk), do: "id()"
 
   defp key(key, _) do
     key

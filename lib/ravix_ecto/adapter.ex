@@ -55,8 +55,8 @@ defmodule Ravix.Ecto.Planner do
   def loaders(:naive_datetime, type), do: [&load_naive_datetime/1, type]
   def loaders(:naive_datetime_usec, type), do: [&load_naive_datetime/1, type]
   def loaders(:binary_id, type), do: [&load_objectid/1, type]
-  def loaders(:uuid, type), do: [&load_binary/1, type]
-  def loaders(:binary, type), do: [&load_binary/1, type]
+  def loaders(:uuid, type), do: [&load_binary(&1, :ecto_uuid), type]
+  def loaders(:binary, type), do: [&load_binary(&1, :binary), type]
   def loaders(:integer, type), do: [&load_integer/1, type]
 
   def loaders(_base, type) do
@@ -85,7 +85,13 @@ defmodule Ravix.Ecto.Planner do
     {:ok, map}
   end
 
-  defp load_binary(binary), do: {:ok, binary}
+  defp load_binary(binary, :ecto_uuid) do
+    Ecto.UUID.dump(binary)
+  end
+
+  defp load_binary(binary, :binary) do
+    {:ok, binary <> <<0>>}
+  end
 
   defp load_objectid(objectid) do
     {:ok, objectid}
@@ -99,8 +105,8 @@ defmodule Ravix.Ecto.Planner do
   def dumpers(:naive_datetime, type), do: [type, &dump_naive_datetime/1]
   def dumpers(:naive_datetime_usec, type), do: [type, &dump_naive_datetime/1]
   def dumpers(:binary_id, type), do: [type, &dump_objectid/1]
-  def dumpers(:uuid, type), do: [type, &dump_binary/1]
-  def dumpers(:binary, type), do: [type, &dump_binary/1]
+  def dumpers(:uuid, type), do: [type, &dump_binary(&1, :ecto_uuid)]
+  def dumpers(:binary, type), do: [type, &dump_binary(&1, :binary)]
   def dumpers(_base, type), do: [type]
 
   defp dump_time({h, m, s, _}), do: Time.from_erl({h, m, s})
@@ -167,8 +173,13 @@ defmodule Ravix.Ecto.Planner do
     {:ok, datetime}
   end
 
-  defp dump_binary(binary) when is_binary(binary),
-    do: {:ok, binary}
+  defp dump_binary(binary, :ecto_uuid) when is_binary(binary) do
+    Ecto.UUID.load(binary)
+  end
+
+  defp dump_binary(binary, :binary) when is_binary(binary) do
+    {:ok, Enum.join(for <<c::utf8 <- binary>>, do: <<c::utf8>>)}
+  end
 
   defp dump_objectid(objectid) do
     {:ok, objectid}

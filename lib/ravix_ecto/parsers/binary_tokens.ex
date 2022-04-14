@@ -1,5 +1,6 @@
 defmodule Ravix.Ecto.Parser.ConditionalTokens do
   alias Ravix.RQL.Tokens.{Condition, And, Or, Not}
+  alias Ravix.Ecto.Parser.Shared
 
   @binary_ops [
     >: &Condition.greater_than/2,
@@ -18,6 +19,14 @@ defmodule Ravix.Ecto.Parser.ConditionalTokens do
     or: &Or.condition/1,
     not: &Not.condition/1
   ]
+
+  update_ops = [:set]
+
+  Enum.map(update_ops, fn key ->
+    def check_update_op!(unquote(key), _query), do: unquote(key)
+  end)
+
+  def check_update_op!(_, query), do: Shared.error(query, "update clause")
 
   defmacro ecto_binary_tokens(), do: Keyword.keys(@binary_ops)
 

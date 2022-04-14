@@ -1,6 +1,7 @@
 defmodule Ravix.Ecto.Parser.QueryParser do
   defmodule QueryInfo do
     defstruct kind: nil,
+              pk: nil,
               fields: [],
               raven_query: nil
   end
@@ -24,6 +25,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
         %QueryInfo{
           kind: :read,
           fields: fields,
+          pk: pk,
           raven_query: find_all_query(raven_query, query_params, projection)
         }
     end
@@ -157,6 +159,19 @@ defmodule Ravix.Ecto.Parser.QueryParser do
     }
   end
 
+  def update_all(ecto_query, params) do
+    {_coll, _model, raven_query, pk} = from(ecto_query)
+    params = List.to_tuple(params)
+    query_params = QueryParams.parse(ecto_query, params, pk)
+    updates = QueryParams.parse_update(ecto_query, params, pk)
+
+    %QueryInfo{
+      kind: :update,
+      fields: [],
+      raven_query: update_all_query(raven_query, query_params, updates)
+    }
+  end
+
   defp find_all_query(raven_query, query_params, projection) do
     raven_query
     |> append_conditions(query_params)
@@ -168,19 +183,18 @@ defmodule Ravix.Ecto.Parser.QueryParser do
     |> append_conditions(query_params)
   end
 
+  defp update_all_query(raven_query, query_params, updates) do
+    raven_query
+    |> append_conditions(query_params)
+    |> append_updates(updates)
+  end
+
   defp from(%EctoQuery{from: %{source: {coll, model}}}) do
-    {coll, model, RavenQuery.from(coll), primary_key(model)}
+    {coll, model, RavenQuery.from(coll, String.first(coll)), primary_key(model)}
   end
 
   defp from(%EctoQuery{from: %{source: %Ecto.SubQuery{}}}) do
     raise ArgumentError, "Ravix Ecto does not support subqueries yet"
-  end
-
-  defp parse_param({field, operations}) when is_atom(field) do
-    operations
-    |> Enum.map(fn {function, param} ->
-      function.(field, param)
-    end)
   end
 
   defp parse_param([params | _]), do: parse_param(params)
@@ -189,6 +203,18 @@ defmodule Ravix.Ecto.Parser.QueryParser do
     operations
     |> Enum.flat_map(&parse_param/1)
     |> Enum.map(fn op -> bool_operation.(op) end)
+  end
+
+  defp parse_param({field, operations}) do
+    operations
+    |> Enum.map(fn {function, param} ->
+      function.(field, param)
+    end)
+  end
+
+  defp append_updates(raven_query, updates) do
+    raven_query
+    |> Ravix.RQL.Query.update(updates)
   end
 
   defp append_conditions(raven_query, query_params) do

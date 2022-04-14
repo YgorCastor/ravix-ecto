@@ -7,7 +7,10 @@ defmodule Ecto.Integration.RepoTest do
     Post,
     CompositePk,
     Permalink,
-    TestRepo
+    Barebone,
+    TestRepo,
+    Pallet,
+    RAW
   }
 
   test "returns already started for started repos" do
@@ -124,6 +127,86 @@ defmodule Ecto.Integration.RepoTest do
                updated = TestRepo.update!(Ecto.Changeset.change(inserted, url: "new"))
 
       assert %Permalink{url: "new"} = TestRepo.delete!(updated)
+    end
+
+    test "should ignore prefixes, as RavenDB does not support schemas" do
+      post = TestRepo.insert!(%Post{})
+      changeset = Ecto.Changeset.change(post, title: "foo")
+
+      TestRepo.insert(%Post{}, prefix: "oops")
+      TestRepo.update(changeset, prefix: "oops")
+      TestRepo.delete(changeset, prefix: "oops")
+    end
+
+    test "should insert and update with changeset" do
+      # On insert we merge the fields and changes
+      changeset =
+        Ecto.Changeset.cast(
+          %Post{visits: 13, title: "wrong"},
+          %{"title" => "hello", "temp" => "unknown"},
+          ~w(title temp)a
+        )
+
+      post = TestRepo.insert!(changeset)
+
+      :timer.sleep(500)
+
+      assert %Post{visits: 13, title: "hello", temp: "unknown"} = post
+      assert %Post{visits: 13, title: "hello", temp: "temp"} = TestRepo.get!(Post, post.id)
+
+      # On update we merge only fields, direct schema changes are discarded
+      changeset =
+        Ecto.Changeset.cast(
+          %{post | visits: 17},
+          %{"title" => "world", "temp" => "unknown"},
+          ~w(title temp)a
+        )
+
+      assert %Post{visits: 17, title: "world", temp: "unknown"} = TestRepo.update!(changeset)
+
+      :timer.sleep(500)
+
+      assert %Post{visits: 13, title: "world", temp: "temp"} = TestRepo.get!(Post, post.id)
+    end
+
+    test "should insert and update with empty changeset" do
+      # On insert we merge the fields and changes
+      changeset = Ecto.Changeset.cast(%Permalink{}, %{}, ~w())
+      assert %Permalink{} = permalink = TestRepo.insert!(changeset)
+
+      # Assert we can update the same value twice,
+      # without changes, without triggering stale errors.
+      changeset = Ecto.Changeset.cast(permalink, %{}, ~w())
+      assert TestRepo.update!(changeset) == permalink
+      assert TestRepo.update!(changeset) == permalink
+    end
+
+    test "should fail if no primary key is defined and a id field is not present" do
+      assert_raise Ecto.ConstraintError, fn -> TestRepo.insert!(%Barebone{}) end
+    end
+
+    test "should insert if no primary key is defined and a id field is present" do
+      assert %Pallet{} = _pallet = TestRepo.insert!(%Pallet{})
+    end
+
+    test "should insert and update with changeset read after writes" do
+      assert %{id: cid, lock_version: 1} = raw = TestRepo.insert!(%RAW{lock_version: 1})
+
+      # Set the counter to 11, so we can read it soon
+      TestRepo.update_all(from(u in RAW, where: u.id == ^cid), set: [lock_version: 11])
+
+      # We will read back on update too
+      changeset = Ecto.Changeset.cast(raw, %{"text" => "0"}, ~w(text)a)
+      assert %{id: ^cid, lock_version: 1, text: "0"} = TestRepo.update!(changeset)
+    end
+
+    test "should insert autogenerates for custom type" do
+      post = TestRepo.insert!(%Post{uuid: nil})
+      assert byte_size(post.uuid) == 36
+
+      :timer.sleep(500)
+
+      assert TestRepo.get_by(Post, [uuid: post.uuid]) == post
     end
   end
 end
