@@ -1,18 +1,32 @@
 defmodule CustomPermalink do
+  use Ecto.Type
+
   def type, do: :id
 
-  def cast(string) when is_binary(string) do
-    case Integer.parse(string) do
-      {int, _} -> {:ok, int}
-      :error   -> :error
+  def cast(id) when is_binary(id) do
+    case UUID.info(id) do
+      {:ok, _} -> {:ok, encode_id(id)}
+      _ -> {:ok, id}
     end
   end
 
-  def cast(integer) when is_integer(integer), do: {:ok, integer}
   def cast(_), do: :error
 
-  def load(integer) when is_integer(integer), do: {:ok, integer}
-  def dump(integer) when is_integer(integer), do: {:ok, integer}
+  def dump(id) when is_binary(id) do
+    {:ok, id}
+  end
+
+  def load(id) when is_binary(id) do
+    case UUID.info(id) do
+      {:ok, _} -> {:ok, encode_id(id)}
+      _ -> {:ok, id}
+    end
+  end
+
+  defp encode_id(id) do
+    id
+    |> Base.encode64()
+  end
 end
 
 defmodule PrefixedString do

@@ -53,10 +53,10 @@ defmodule Ravix.Ecto.Parser.Shared do
   def error(query, place) do
     raise Ecto.QueryError,
       query: query,
-      message: "Invalid expression for MongoDB adapter in #{place}"
+      message: "Invalid expression for RavenDB adapter in #{place}"
   end
 
   defp error(place) do
-    raise ArgumentError, "Invalid expression for MongoDB adapter in #{place}"
+    raise ArgumentError, "Invalid expression for RavenDB adapter in #{place}"
   end
 end

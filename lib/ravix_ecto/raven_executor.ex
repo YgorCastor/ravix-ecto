@@ -24,11 +24,12 @@ defmodule Ravix.Ecto.Executor do
   def update_one(%{repo: repo}, fields, filters),
     do: exec_update_one(Keyword.get(repo.config, :store), fields, filters)
 
-  defp exec_update_one(store, fields, id: id) do
+  defp exec_update_one(store, fields, filters) do
     OK.for do
+      id = Keyword.get(filters, :id)
       session_id <- store.open_session()
       result <- RavixSession.load(session_id, id)
-      document_to_update = Enum.at(result["Results"], 0)
+      document_to_update <- filter_results(result["Results"], filters)
 
       updated_document =
         Enum.reduce(fields, document_to_update, fn {field, value}, document ->
@@ -53,11 +54,12 @@ defmodule Ravix.Ecto.Executor do
   def delete_one(%{repo: repo}, filters),
     do: exec_delete_one(Keyword.get(repo.config, :store), filters)
 
-  defp exec_delete_one(store, id: id) do
+  defp exec_delete_one(store, filters) do
     OK.for do
+      id = Keyword.get(filters, :id)
       session_id <- store.open_session()
       result <- RavixSession.load(session_id, id)
-      document_to_delete = Enum.at(result["Results"], 0)
+      document_to_delete <- filter_results(result["Results"], filters)
       _ <- RavixSession.delete(session_id, document_to_delete["@metadata"]["@id"])
       _ <- RavixSession.save_changes(session_id)
       _ = store.close_session(session_id)
@@ -110,5 +112,18 @@ defmodule Ravix.Ecto.Executor do
     result
     |> Morphix.atomorphiform!()
     |> Keyword.new()
+  end
+
+  defp filter_results(results, filters) do
+    case Enum.filter(results, &apply_filters(&1, filters)) do
+      valid_results when valid_results != [] -> {:ok, Enum.at(valid_results, 0)}
+      _ -> {:error, :stale_entity}
+    end
+  end
+
+  defp apply_filters(result, filters) do
+    filters
+    |> Enum.reject(fn {field, _} -> field == :id end)
+    |> Enum.all?(fn {field, value} -> result[Atom.to_string(field)] == value end)
   end
 end

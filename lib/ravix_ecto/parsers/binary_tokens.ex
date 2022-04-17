@@ -20,7 +20,7 @@ defmodule Ravix.Ecto.Parser.ConditionalTokens do
     not: &Not.condition/1
   ]
 
-  update_ops = [:set]
+  update_ops = [:set, :inc, :dec]
 
   Enum.map(update_ops, fn key ->
     def check_update_op!(unquote(key), _query), do: unquote(key)
@@ -39,4 +39,6 @@ defmodule Ravix.Ecto.Parser.ConditionalTokens do
   Enum.map(@bool_ops, fn {op, ravix_boolean_op} ->
     def bool_op(unquote(op)), do: unquote(ravix_boolean_op)
   end)
+
+  defp identity(value), do: value
 end

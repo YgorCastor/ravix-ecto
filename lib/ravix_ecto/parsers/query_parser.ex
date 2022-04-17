@@ -103,7 +103,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
     IO.inspect(coll, label: :insert_5)
     IO.inspect(prefix, label: :insert_5)
     IO.inspect(docs, label: :insert_5)
-    IO.inspect(conflict_targets, label: :insert_)
+    IO.inspect(conflict_targets, label: :insert_5)
     IO.inspect(query, label: :insert_5)
     IO.inspect(values, label: :insert_5)
     IO.inspect(returning, label: :insert_5)
@@ -133,6 +133,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
 
   defp plain_insert(%{source: _coll, schema: schema, prefix: _prefix}, fields, _returning) do
     pk = primary_key(schema)
+
     # We don't want to map directly to a struct, it can fuck up field-sources
     document =
       cast(struct(schema, %{}), Enum.into(fields, %{}), schema.__schema__(:fields))
@@ -175,6 +176,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   defp find_all_query(raven_query, query_params, projection) do
     raven_query
     |> append_conditions(query_params)
+    |> append_default_where_if_missing()
     |> parse_projections(projection)
   end
 
@@ -213,8 +215,18 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   end
 
   defp append_updates(raven_query, updates) do
+    updates =
+      Enum.map(updates, fn
+        {op, fields} -> parse_update_fields(op, fields)
+      end)
+      |> :lists.flatten()
+
     raven_query
     |> Ravix.RQL.Query.update(updates)
+  end
+
+  defp parse_update_fields(op, fields) do
+    Enum.map(fields, fn {name, value} -> %{operation: op, name: name, value: value} end)
   end
 
   defp append_conditions(raven_query, query_params) do
@@ -256,7 +268,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
       %Tokens.Not{condition: %Tokens.Or{}} = condition ->
         %RavenQuery{
           query
-          | and_tokens: query.or_tokens ++ [condition]
+          | or_tokens: query.or_tokens ++ [condition]
         }
 
       %Tokens.Condition{} = condition when query.where_token == nil ->
@@ -274,4 +286,11 @@ defmodule Ravix.Ecto.Parser.QueryParser do
         |> Map.filter(fn {_key, value} -> value end)
         |> Map.keys()
       )
+
+  defp append_default_where_if_missing(%RavenQuery{} = query) do
+    case query.where_token == nil do
+      true -> RavenQuery.where(query, Ravix.RQL.Tokens.Condition.not_equal_to("id()", nil))
+      false -> query
+    end
+  end
 end

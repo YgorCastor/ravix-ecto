@@ -74,7 +74,8 @@ defmodule Ravix.Ecto.Planner do
   end
 
   defp load_datetime(datetime) when is_bitstring(datetime) do
-    {:ok, DateTime.from_iso8601(datetime)}
+    {:ok, utc_date_time, _} = DateTime.from_iso8601(datetime)
+    {:ok, utc_date_time}
   end
 
   defp load_datetime(datetime) do

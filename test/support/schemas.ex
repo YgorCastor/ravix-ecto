@@ -36,7 +36,7 @@ defmodule Ecto.Integration.Post do
     field(:wrapped_visits, WrappedInteger)
     field(:intensity, :float)
     field(:bid, :binary_id)
-    field(:uuid, Ecto.Integration.TestRepo.uuid(), autogenerate: true)
+    field(:uuid, Ecto.Integration.TestRepo.uuid(), autogenerate: true, unique: true)
     field(:meta, :map)
     field(:links, {:map, :string})
     field(:intensities, {:map, :float})
@@ -98,9 +98,11 @@ defmodule Ecto.Integration.Comment do
   """
   use Ecto.Integration.Schema
 
+  @derive {Jason.Encoder, except: [:__meta__]}
   schema "comments" do
     field(:text, :string)
     field(:lock_version, :integer, default: 1)
+    field(:"@metadata", :map, virtual: true)
     belongs_to(:post, Ecto.Integration.Post)
     belongs_to(:author, Ecto.Integration.User)
     has_one(:post_permalink, through: [:post, :permalink])
@@ -172,8 +174,10 @@ defmodule Ecto.Integration.User do
   """
   use Ecto.Integration.Schema
 
+  @derive {Jason.Encoder, except: [:__meta__]}
   schema "users" do
     field(:name, :string)
+    field(:"@metadata", :map, virtual: true)
 
     has_many(:comments, Ecto.Integration.Comment,
       foreign_key: :author_id,
@@ -223,8 +227,10 @@ defmodule Ecto.Integration.Custom do
   use Ecto.Integration.Schema
 
   @primary_key {:bid, :binary_id, autogenerate: true}
+  @derive {Jason.Encoder, except: [:__meta__]}
   schema "customs" do
     field(:uuid, Ecto.UUID)
+    field(:"@metadata", :map, virtual: true)
 
     many_to_many(:customs, Ecto.Integration.Custom,
       join_through: "customs_customs",
@@ -417,6 +423,16 @@ defmodule Ecto.Integration.RAW do
   schema "raws" do
     field(:text, :string)
     field(:lock_version, :integer, read_after_writes: true)
+    field(:"@metadata", :map, virtual: true)
+  end
+end
+
+defmodule IdTest do
+  use Ecto.Schema
+
+  @primary_key {:id, CustomPermalink, autogenerate: true}
+  @derive {Jason.Encoder, except: [:__meta__]}
+  schema "idtests" do
     field(:"@metadata", :map, virtual: true)
   end
 end
