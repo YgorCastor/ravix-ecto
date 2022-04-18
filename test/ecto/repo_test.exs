@@ -433,5 +433,49 @@ defmodule Ecto.Integration.RepoTest do
       assert_raise Ecto.NoResultsError, fn -> query |> first |> TestRepo.one!() end
       assert_raise Ecto.NoResultsError, fn -> query |> last |> TestRepo.one!() end
     end
+
+    test "exists? should work" do
+      TestRepo.insert!(%Post{title: "1", visits: 2})
+      TestRepo.insert!(%Post{title: "2", visits: 1})
+
+      query = from(p in Post, where: not is_nil(p.title), limit: 2)
+      assert query |> TestRepo.exists?() == true
+
+      query = from(p in Post, where: p.title == "1", select: p.title)
+      assert query |> TestRepo.exists?() == true
+
+      query = from(p in Post, where: is_nil(p.id))
+      assert query |> TestRepo.exists?() == false
+
+      query = from(p in Post, where: is_nil(p.id))
+      assert query |> TestRepo.exists?() == false
+    end
+
+    test "exists? with group_by" do
+      TestRepo.insert!(%Post{title: "1", visits: 2})
+      TestRepo.insert!(%Post{title: "2", visits: 1})
+
+      query =
+        from(p in Post,
+          select: p.visits,
+          group_by: p.visits,
+          where: p.visits > 1
+        )
+
+      assert query |> TestRepo.exists?() == true
+    end
+
+    test "havings should throw an exception, RavenDB does not support it" do
+      TestRepo.insert!(%Post{title: "1", visits: 2})
+
+      query =
+        from(p in Post,
+          select: {p.visits, avg(p.visits)},
+          group_by: p.visits,
+          having: avg(p.visits) > 1
+        )
+
+      assert_raise Ecto.QueryError, fn -> query |> TestRepo.exists?() end
+    end
   end
 end

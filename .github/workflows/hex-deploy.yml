@@ -1,0 +1,54 @@
+name: Deploy to Hex
+
+on:
+  push:
+    branches: [release/*]
+
+jobs:
+  run-deploy:
+    name: Deploy to Hex
+    runs-on: ubuntu-latest
+    env:
+      MIX_ENV: dev
+    container:
+      image: elixir:1.13.3-alpine
+    steps:
+      - name: Install Git/Curl/GNU Tar
+        run: apk add --no-cache curl tar git
+      - name: Fix git permissions
+        run: git config --global --add safe.directory /__w/ravix/ravix
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Configure Bot Commiter
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+      - name: Build & Deps Cache
+        uses: actions/cache@v3
+        id: mix-deps
+        with:
+          path: |
+            _build
+            deps
+          key: ${{ runner.os }}-01-build-${{ hashFiles('mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-01-build-${{ hashFiles('mix.lock') }}
+            ${{ runner.os }}-01-build-
+      - name: Instal Mix and Rebar
+        run: mix local.hex --force && mix local.rebar --force
+      - name: Install dependencies
+        run: mix deps.get
+      - name: Set the new version
+        run: mix version.up
+      - name: Publish to hex.pm
+        run: HEX_API_KEY=${{ secrets.HEX_API_KEY }} mix hex.publish --yes
+      - name: Tag the version
+        run: mix version.tag
+      - name: Push Version Change
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: master
+          tags: true
+          force: true

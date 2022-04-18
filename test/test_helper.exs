@@ -1,4 +1,8 @@
-ExUnit.start()
+ExUnit.start(
+  exclude: [
+    :todo
+  ]
+)
 
 Application.put_env(:ecto, :primary_key_type, :binary_id)
 Application.put_env(:ecto, :async_integration_tests, false)

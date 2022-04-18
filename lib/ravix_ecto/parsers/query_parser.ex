@@ -16,6 +16,8 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   alias Ravix.Ecto.Parser.{Projection, QueryParams}
 
   def all(ecto_query, params) do
+    check_query!(ecto_query)
+
     {coll, model, raven_query, pk} = from(ecto_query)
     params = List.to_tuple(params)
     query_params = QueryParams.parse(ecto_query, params, pk)
@@ -149,6 +151,8 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   end
 
   def delete_all(ecto_query, params) do
+    check_query!(ecto_query)
+
     {_coll, _model, raven_query, pk} = from(ecto_query)
     params = List.to_tuple(params)
     query_params = QueryParams.parse(ecto_query, params, pk)
@@ -161,6 +165,8 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   end
 
   def update_all(ecto_query, params) do
+    check_query!(ecto_query)
+
     {_coll, _model, raven_query, pk} = from(ecto_query)
     params = List.to_tuple(params)
     query_params = QueryParams.parse(ecto_query, params, pk)
@@ -179,6 +185,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
     |> append_default_where_if_missing()
     |> parse_projections(projection)
     |> parse_order(ecto_query, pk)
+    |> parse_grouping(ecto_query, pk)
     |> limit_skip(ecto_query, query_params, pk)
   end
 
@@ -313,6 +320,19 @@ defmodule Ravix.Ecto.Parser.QueryParser do
           raven_query,
           ordering
         )
+    end
+  end
+
+  defp parse_grouping(%RavenQuery{} = raven_query, %EctoQuery{group_bys: group_bys} = query, pk) do
+    case group_bys
+         |> Enum.flat_map(fn %EctoQuery.QueryExpr{expr: expr} ->
+           Enum.map(expr, &field(&1, pk, query, "group by clause"))
+         end) do
+      [] ->
+        raven_query
+
+      grouping ->
+        RavenQuery.group_by(raven_query, grouping)
     end
   end
 

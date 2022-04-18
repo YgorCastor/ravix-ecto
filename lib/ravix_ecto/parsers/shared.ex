@@ -33,8 +33,6 @@ defmodule Ravix.Ecto.Parser.Shared do
   def map_unless_empty([]), do: %{}
   def map_unless_empty(list), do: list
 
-  def null_unless_empty([]), do: nil
-
   def primary_key(nil), do: nil
 
   def primary_key(schema) do
@@ -51,6 +49,25 @@ defmodule Ravix.Ecto.Parser.Shared do
                 "and #{inspect(keys)} were defined in #{inspect(schema)}."
     end
   end
+
+  @not_supported ~w(lock joins havings offset)a
+  @query_empty_values %Ecto.Query{} |> Map.take(@not_supported)
+
+  def check_query!(query, allow \\ []) do
+    @query_empty_values
+    |> Map.drop(allow)
+    |> Enum.each(fn {element, empty} ->
+      check(
+        Map.get(query, element),
+        empty,
+        query,
+        "RavenDB adapter does not support '#{element}' clause in this query"
+      )
+    end)
+  end
+
+  defp check(expr, expr, _, _), do: nil
+  defp check(_, _, query, message), do: raise(Ecto.QueryError, query: query, message: message)
 
   def error(query, place) do
     raise Ecto.QueryError,
