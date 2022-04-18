@@ -5,7 +5,7 @@ config :ravix_ecto, Ravix.Ecto.TestStore,
   database: "test",
   retry_on_failure: true,
   retry_on_stale: true,
-  retry_backoff: 100,
+  retry_backoff: 500,
   retry_count: 3,
   force_create_database: true,
   document_conventions: %{

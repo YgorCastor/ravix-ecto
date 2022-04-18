@@ -26,7 +26,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
           kind: :read,
           fields: fields,
           pk: pk,
-          raven_query: find_all_query(raven_query, query_params, projection)
+          raven_query: find_all_query(raven_query, ecto_query, query_params, projection, pk)
         }
     end
   end
@@ -173,11 +173,13 @@ defmodule Ravix.Ecto.Parser.QueryParser do
     }
   end
 
-  defp find_all_query(raven_query, query_params, projection) do
+  defp find_all_query(raven_query, ecto_query, query_params, projection, pk) do
     raven_query
     |> append_conditions(query_params)
     |> append_default_where_if_missing()
     |> parse_projections(projection)
+    |> parse_order(ecto_query, pk)
+    |> limit_skip(ecto_query, query_params, pk)
   end
 
   defp delete_all_query(raven_query, query_params) do
@@ -197,6 +199,10 @@ defmodule Ravix.Ecto.Parser.QueryParser do
 
   defp from(%EctoQuery{from: %{source: %Ecto.SubQuery{}}}) do
     raise ArgumentError, "Ravix Ecto does not support subqueries yet"
+  end
+
+  defp parse_param({field, nil}) do
+    Ravix.RQL.Tokens.Condition.equal_to(field, nil)
   end
 
   defp parse_param([params | _]), do: parse_param(params)
@@ -293,4 +299,50 @@ defmodule Ravix.Ecto.Parser.QueryParser do
       false -> query
     end
   end
+
+  defp parse_order(%RavenQuery{} = raven_query, %EctoQuery{order_bys: order_bys} = query, pk) do
+    case order_bys
+         |> Enum.flat_map(fn %EctoQuery.QueryExpr{expr: expr} ->
+           Enum.map(expr, &order_by_expr(&1, pk, query))
+         end) do
+      [] ->
+        raven_query
+
+      ordering ->
+        RavenQuery.order_by(
+          raven_query,
+          ordering
+        )
+    end
+  end
+
+  defp limit_skip(
+         %RavenQuery{} = raven_query,
+         %EctoQuery{limit: limit, offset: offset} = query,
+         params,
+         pk
+       ) do
+    case limit == nil and offset == nil do
+      true ->
+        raven_query
+
+      false ->
+        RavenQuery.limit(
+          raven_query,
+          offset_limit(offset, params, pk, query, "offset clause"),
+          offset_limit(limit, params, pk, query, "limit clause")
+        )
+    end
+  end
+
+  defp offset_limit(nil, _params, _pk, _query, _where), do: 0
+
+  defp offset_limit(%EctoQuery.QueryExpr{expr: expr}, params, pk, query, where),
+    do: value(expr, params, pk, query, where)
+
+  defp order_by_expr({:asc, expr}, pk, query),
+    do: {field(expr, pk, query, "order clause"), :asc}
+
+  defp order_by_expr({:desc, expr}, pk, query),
+    do: {field(expr, pk, query, "order clause"), :desc}
 end

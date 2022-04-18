@@ -285,100 +285,153 @@ defmodule Ecto.Integration.RepoTest do
 
       refute TestRepo.get(Comment, base_comment.id)
     end
-  end
 
-  test "should not raise on unique constraints, RavenDB does not support it" do
-    changeset = Ecto.Changeset.change(%Post{}, uuid: Ecto.UUID.generate())
-    {:ok, _} = TestRepo.insert(changeset)
+    test "should not raise on unique constraints, RavenDB does not support it" do
+      changeset = Ecto.Changeset.change(%Post{}, uuid: Ecto.UUID.generate())
+      {:ok, _} = TestRepo.insert(changeset)
 
-    {:ok, _} =
-      changeset
-      |> Ecto.Changeset.unique_constraint(:uuid, name: :posts_email_changeset)
-      |> TestRepo.insert()
-  end
-
-  test "should get(!) successfully" do
-    post1 = TestRepo.insert!(%Post{title: "1"})
-    post2 = TestRepo.insert!(%Post{title: "2"})
-
-    assert post1 == TestRepo.get(Post, post1.id)
-    # With casting
-    assert post2 == TestRepo.get(Post, to_string(post2.id))
-
-    assert post1 == TestRepo.get!(Post, post1.id)
-    # With casting
-    assert post2 == TestRepo.get!(Post, to_string(post2.id))
-
-    TestRepo.delete!(post1)
-
-    assert TestRepo.get(Post, post1.id) == nil
-
-    assert_raise Ecto.NoResultsError, fn ->
-      TestRepo.get!(Post, post1.id)
+      {:ok, _} =
+        changeset
+        |> Ecto.Changeset.unique_constraint(:uuid, name: :posts_email_changeset)
+        |> TestRepo.insert()
     end
-  end
 
-  @tag :todo
-  test "should get(!) with custom source" do
-    custom = Ecto.put_meta(%Custom{}, source: "posts")
-    custom = TestRepo.insert!(custom)
-    bid = custom.bid
+    test "should get(!) successfully" do
+      post1 = TestRepo.insert!(%Post{title: "1"})
+      post2 = TestRepo.insert!(%Post{title: "2"})
 
-    assert %Custom{bid: ^bid, __meta__: %{source: "posts"}} =
-             TestRepo.get(from(c in {"posts", Custom}), bid)
-  end
+      assert post1 == TestRepo.get(Post, post1.id)
+      # With casting
+      assert post2 == TestRepo.get(Post, to_string(post2.id))
 
-  test "should get(!) with binary_id" do
-    custom = TestRepo.insert!(%Custom{})
-    bid = custom.bid
-    assert %Custom{bid: ^bid} = TestRepo.get(Custom, bid)
-  end
+      assert post1 == TestRepo.get!(Post, post1.id)
+      # With casting
+      assert post2 == TestRepo.get!(Post, to_string(post2.id))
 
-  test "should get_by(!) successfully" do
-    post1 = TestRepo.insert!(%Post{title: "1", visits: 1})
-    post2 = TestRepo.insert!(%Post{title: "2", visits: 2})
+      TestRepo.delete!(post1)
 
-    # assert post1 == TestRepo.get_by(Post, id: post1.id)
-    # assert post1 == TestRepo.get_by(Post, title: post1.title)
-    assert post1 == TestRepo.get_by(Post, id: post1.id, title: post1.title)
+      assert TestRepo.get(Post, post1.id) == nil
 
-    # With casting
-    assert post2 == TestRepo.get_by(Post, id: to_string(post2.id))
-    assert nil == TestRepo.get_by(Post, title: "hey")
-    assert nil == TestRepo.get_by(Post, id: post2.id, visits: 3)
-
-    assert post1 == TestRepo.get_by!(Post, id: post1.id)
-    assert post1 == TestRepo.get_by!(Post, title: post1.title)
-    assert post1 == TestRepo.get_by!(Post, id: post1.id, visits: 1)
-    # With casting
-    assert post2 == TestRepo.get_by!(Post, id: to_string(post2.id))
-
-    assert post1 == TestRepo.get_by!(Post, %{id: post1.id})
-
-    assert_raise Ecto.NoResultsError, fn ->
-      TestRepo.get_by!(Post, id: post2.id, title: "hey")
+      assert_raise Ecto.NoResultsError, fn ->
+        TestRepo.get!(Post, post1.id)
+      end
     end
-  end
 
-  test "reload" do
-    post1 = TestRepo.insert!(%Post{title: "1", visits: 1})
-    post2 = TestRepo.insert!(%Post{title: "2", visits: 2})
-    non_existent_id = UUID.uuid4()
+    @tag :todo
+    test "should get(!) with custom source" do
+      custom = Ecto.put_meta(%Custom{}, source: "posts")
+      custom = TestRepo.insert!(custom)
+      bid = custom.bid
 
-    assert post1 == TestRepo.reload(post1)
-    assert [post1, post2] == TestRepo.reload([post1, post2])
+      assert %Custom{bid: ^bid, __meta__: %{source: "posts"}} =
+               TestRepo.get(from(c in {"posts", Custom}), bid)
+    end
 
-    assert [post1, post2, nil] == TestRepo.reload([post1, post2, %Post{id: non_existent_id}])
+    test "should get(!) with binary_id" do
+      custom = TestRepo.insert!(%Custom{})
+      bid = custom.bid
+      assert %Custom{bid: ^bid} = TestRepo.get(Custom, bid)
+    end
 
-    assert nil == TestRepo.reload(%Post{id: non_existent_id})
+    test "should get_by(!) successfully" do
+      post1 = TestRepo.insert!(%Post{title: "1", visits: 1})
+      post2 = TestRepo.insert!(%Post{title: "2", visits: 2})
 
-    # keeps order as received in the params
-    assert [post2, post1] == TestRepo.reload([post2, post1])
+      # assert post1 == TestRepo.get_by(Post, id: post1.id)
+      # assert post1 == TestRepo.get_by(Post, title: post1.title)
+      assert post1 == TestRepo.get_by(Post, id: post1.id, title: post1.title)
 
-    TestRepo.update_all(Post, inc: [visits: 1])
+      # With casting
+      assert post2 == TestRepo.get_by(Post, id: to_string(post2.id))
+      assert nil == TestRepo.get_by(Post, title: "hey")
+      assert nil == TestRepo.get_by(Post, id: post2.id, visits: 3)
 
-    :timer.sleep(500)
+      assert post1 == TestRepo.get_by!(Post, id: post1.id)
+      assert post1 == TestRepo.get_by!(Post, title: post1.title)
+      assert post1 == TestRepo.get_by!(Post, id: post1.id, visits: 1)
+      # With casting
+      assert post2 == TestRepo.get_by!(Post, id: to_string(post2.id))
 
-    assert [%{visits: 2}, %{visits: 3}] = TestRepo.reload([post1, post2])
+      assert post1 == TestRepo.get_by!(Post, %{id: post1.id})
+
+      assert_raise Ecto.NoResultsError, fn ->
+        TestRepo.get_by!(Post, id: post2.id, title: "hey")
+      end
+    end
+
+    test "should reload successfully" do
+      post1 = TestRepo.insert!(%Post{title: "1", visits: 1})
+      post2 = TestRepo.insert!(%Post{title: "2", visits: 2})
+      non_existent_id = UUID.uuid4()
+
+      assert post1 == TestRepo.reload(post1)
+      assert [post1, post2] == TestRepo.reload([post1, post2])
+
+      assert [post1, post2, nil] == TestRepo.reload([post1, post2, %Post{id: non_existent_id}])
+
+      assert nil == TestRepo.reload(%Post{id: non_existent_id})
+
+      # keeps order as received in the params
+      assert [post2, post1] == TestRepo.reload([post2, post1])
+
+      TestRepo.update_all(Post, inc: [visits: 1])
+
+      :timer.sleep(500)
+
+      assert [%{visits: 2}, %{visits: 3}] = TestRepo.reload([post1, post2])
+    end
+
+    test "reload should ignore preloads" do
+      post = TestRepo.insert!(%Post{title: "1", visits: 1}) |> TestRepo.preload(:comments)
+
+      assert %{comments: %Ecto.Association.NotLoaded{}} = TestRepo.reload(post)
+    end
+
+    test "reload! should throw exceptions" do
+      post1 = TestRepo.insert!(%Post{title: "1", visits: 1})
+      post2 = TestRepo.insert!(%Post{title: "2", visits: 2})
+      non_existent_id = UUID.uuid4()
+
+      assert post1 == TestRepo.reload!(post1)
+      assert [post1, post2] == TestRepo.reload!([post1, post2])
+
+      assert_raise RuntimeError, ~r"could not reload", fn ->
+        TestRepo.reload!([post1, post2, %Post{id: non_existent_id}])
+      end
+
+      assert_raise Ecto.NoResultsError, fn ->
+        TestRepo.reload!(%Post{id: non_existent_id})
+      end
+
+      assert [post2, post1] == TestRepo.reload([post2, post1])
+
+      TestRepo.update_all(Post, inc: [visits: 1])
+
+      :timer.sleep(500)
+
+      assert [%{visits: 2}, %{visits: 3}] = TestRepo.reload!([post1, post2])
+    end
+
+    test "first, last and one(!)" do
+      post1 = TestRepo.insert!(%Post{title: "1"})
+      post2 = TestRepo.insert!(%Post{title: "2"})
+
+      assert post1 == Post |> first(:title) |> TestRepo.one()
+      assert post2 == Post |> last(:title) |> TestRepo.one()
+
+      query = from(p in Post, order_by: p.title)
+      assert post1 == query |> first |> TestRepo.one()
+      assert post2 == query |> last |> TestRepo.one()
+
+      query = from(p in Post, order_by: [desc: p.title], limit: 10)
+      assert post2 == query |> first |> TestRepo.one()
+      assert post1 == query |> last |> TestRepo.one()
+
+      query = from(p in Post, where: is_nil(p.id))
+      refute query |> first |> TestRepo.one()
+      refute query |> last |> TestRepo.one()
+      assert_raise Ecto.NoResultsError, fn -> query |> first |> TestRepo.one!() end
+      assert_raise Ecto.NoResultsError, fn -> query |> last |> TestRepo.one!() end
+    end
   end
 end

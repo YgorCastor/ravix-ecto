@@ -33,6 +33,8 @@ defmodule Ravix.Ecto.Parser.Shared do
   def map_unless_empty([]), do: %{}
   def map_unless_empty(list), do: list
 
+  def null_unless_empty([]), do: nil
+
   def primary_key(nil), do: nil
 
   def primary_key(schema) do
