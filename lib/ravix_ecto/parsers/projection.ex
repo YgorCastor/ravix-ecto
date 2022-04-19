@@ -3,8 +3,7 @@ defmodule Ravix.Ecto.Parser.Projection do
 
   import Ravix.Ecto.Parser.Shared
 
-  @aggregate_ops [:sum]
-  @special_ops [:count | @aggregate_ops]
+  @aggregate_ops [:sum, :avg, :min, :max]
 
   def project(%EctoQuery{select: nil}, _params, _from), do: {:find, %{}, []}
 
@@ -128,10 +127,10 @@ defmodule Ravix.Ecto.Parser.Projection do
   end
 
   def project([{op, _, _} | _rest], _params, _from, query, _pacc, _facc)
-       when op in @special_ops do
+       when op in @aggregate_ops do
     error(
       query,
-      "select clause supports only one of the special functions: `count`, `min`, `max`"
+      ": Aggregation operations aren't supported in the current version"
     )
   end
 

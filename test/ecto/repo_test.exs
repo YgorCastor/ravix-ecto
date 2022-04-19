@@ -477,5 +477,110 @@ defmodule Ecto.Integration.RepoTest do
 
       assert_raise Ecto.QueryError, fn -> query |> TestRepo.exists?() end
     end
+
+    test "should insert all" do
+      assert {2, nil} =
+               TestRepo.insert_all("comments", [
+                 [id: UUID.uuid4(), text: "1"],
+                 %{id: UUID.uuid4(), text: "2", lock_version: 2}
+               ])
+
+      assert {2, nil} =
+               TestRepo.insert_all({"comments", Comment}, [
+                 [text: "3"],
+                 %{text: "4", lock_version: 2}
+               ])
+
+      assert [
+               %Comment{text: "1", lock_version: 1},
+               %Comment{text: "2", lock_version: 2},
+               %Comment{text: "3", lock_version: 1},
+               %Comment{text: "4", lock_version: 2}
+             ] = TestRepo.all(Comment) |> Enum.sort(&(&1.text <= &2.text))
+
+      assert {2, nil} = TestRepo.insert_all(Post, [[], []])
+      assert [%Post{}, %Post{}] = TestRepo.all(Post)
+
+      assert {0, nil} = TestRepo.insert_all("posts", [])
+      assert {0, nil} = TestRepo.insert_all({"posts", Post}, [])
+    end
+  end
+
+  @tag :not_supported_yet
+  test "Aggregations are not supported" do
+    assert_raise Ecto.QueryError, fn ->
+      assert TestRepo.aggregate(Post, :max, :visits) == 14
+    end
+
+    assert_raise Ecto.QueryError, fn ->
+      assert TestRepo.aggregate(Post, :min, :visits) == 10
+    end
+
+    assert_raise Ecto.QueryError, fn ->
+      assert TestRepo.aggregate(Post, :count, :visits) == 4
+    end
+
+    assert_raise Ecto.QueryError, fn ->
+      assert "50" = to_string(TestRepo.aggregate(Post, :sum, :visits))
+    end
+  end
+
+  @tag :aggregations
+  describe "Aggregations on simple queries" do
+
+    @tag :aggregations
+    test "aggregate" do
+      assert_raise Ecto.NoResultsError, fn ->
+        assert TestRepo.aggregate(Post, :max, :visits) == nil
+      end
+
+      TestRepo.insert!(%Post{visits: 10})
+      TestRepo.insert!(%Post{visits: 12})
+      TestRepo.insert!(%Post{visits: 14})
+      TestRepo.insert!(%Post{visits: 14})
+
+      # Barebones
+      assert TestRepo.aggregate(Post, :max, :visits) == 14
+      assert TestRepo.aggregate(Post, :min, :visits) == 10
+      assert TestRepo.aggregate(Post, :count, :visits) == 4
+      assert "50" = to_string(TestRepo.aggregate(Post, :sum, :visits))
+
+      # With order_by
+      query = from(Post, order_by: [asc: :visits])
+      assert TestRepo.aggregate(query, :max, :visits) == 14
+    end
+
+    @tag :aggregations
+    test "aggregate with order_by and limit" do
+      TestRepo.insert!(%Post{visits: 10})
+      TestRepo.insert!(%Post{visits: 12})
+      TestRepo.insert!(%Post{visits: 14})
+      TestRepo.insert!(%Post{visits: 14})
+
+      # With order_by and limit
+      query = from(Post, order_by: [asc: :visits], limit: 2)
+      assert TestRepo.aggregate(query, :max, :visits) == 12
+    end
+
+    @tag :aggregations
+    test "aggregate avg" do
+      TestRepo.insert!(%Post{visits: 10})
+      TestRepo.insert!(%Post{visits: 12})
+      TestRepo.insert!(%Post{visits: 14})
+      TestRepo.insert!(%Post{visits: 14})
+
+      assert "12.5" <> _ = to_string(TestRepo.aggregate(Post, :avg, :visits))
+    end
+
+    @tag :aggregations
+    test "aggregate with distinct" do
+      TestRepo.insert!(%Post{visits: 10})
+      TestRepo.insert!(%Post{visits: 12})
+      TestRepo.insert!(%Post{visits: 14})
+      TestRepo.insert!(%Post{visits: 14})
+
+      query = from(Post, order_by: [asc: :visits], distinct: true)
+      assert TestRepo.aggregate(query, :count, :visits) == 3
+    end
   end
 end

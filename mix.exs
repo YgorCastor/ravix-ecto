@@ -6,9 +6,25 @@ defmodule RavixEcto.MixProject do
       app: :ravix_ecto,
       version: "0.1.0",
       elixir: "~> 1.13",
-      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      elixirc_paths: elixirc_paths(Mix.env()),
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test
+      ],
+      dialyzer: [
+        plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
+      ],
+      source_url: "https://github.com/YgorCastor/ravix-ecto",
+      homepage_url: "https://github.com/YgorCastor/ravix-ecto",
+      docs: [
+        main: "readme",
+        extras: ["README.md"]
+      ]
     ]
   end
 

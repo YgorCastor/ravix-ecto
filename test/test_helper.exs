@@ -1,6 +1,7 @@
 ExUnit.start(
   exclude: [
-    :todo
+    :todo,
+    :aggregations
   ]
 )
 

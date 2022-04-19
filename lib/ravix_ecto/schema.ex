@@ -37,6 +37,17 @@ defmodule Ravix.Ecto.Schema do
       ) do
     {:insert_all, pk, documents_to_insert} =
       QueryParser.insert(schema_meta, fields_list, on_conflict, returning, opts)
+
+    case Executor.insert(adapter_meta, documents_to_insert, pk) do
+      {:ok, response} ->
+        created_count = length(response)
+
+        {created_count,
+         returning_fields_for_list(adapter_meta, schema_meta, response, returning, pk, opts)}
+
+      {:error, :no_valid_id_informed} ->
+        {:invalid, [no_valid_id_informed: inspect(documents_to_insert)]}
+    end
   end
 
   @impl Ecto.Adapter.Schema
@@ -57,6 +68,16 @@ defmodule Ravix.Ecto.Schema do
 
   @impl Ecto.Adapter.Schema
   def autogenerate(_), do: UUID.uuid4()
+
+  defp returning_fields_for_list(_adapter_meta, _schema_meta, _result, [], _primary_key, _opts),
+    do: nil
+
+  defp returning_fields_for_list(adapter_meta, schema_meta, result, metadata, pk, opts) do
+    Enum.map(
+      result,
+      &returning_fields(adapter_meta, schema_meta, &1, metadata, pk, opts)
+    )
+  end
 
   defp returning_fields(_adapter_meta, _schema_meta, _result, [], _primary_key, _opts), do: []
 

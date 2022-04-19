@@ -9,16 +9,27 @@ defmodule Ravix.Ecto.Executor do
   def insert(%{repo: repo}, document, pk),
     do: insert(Keyword.get(repo.config, :store), document, pk)
 
-  def insert(store, document, pk) do
+  def insert(store, documents, pk) when is_list(documents) do
     OK.for do
       session_id <- store.open_session()
-      _ <- RavixSession.store(session_id, document, Map.get(document, pk))
+      stored_results = Enum.map(documents, &RavixSession.store(session_id, &1, Map.get(&1, pk)))
+
+      _ <-
+        case Enum.find(stored_results, fn {result, _} -> result == :error end) do
+          nil -> {:ok, nil}
+          err -> err
+        end
+
       updated_store <- RavixSession.save_changes(session_id)
       results = to_keywords(updated_store["Results"])
       _ = store.close_session(session_id)
     after
       results
     end
+  end
+
+  def insert(store, document, pk) do
+    insert(store, [document], pk)
   end
 
   def update_one(%{repo: repo}, fields, filters),

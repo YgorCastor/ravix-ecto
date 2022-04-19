@@ -133,21 +133,42 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   def insert(schema_meta, fields, {:nothing, [], []}, returning, _opts),
     do: plain_insert(schema_meta, fields, returning)
 
-  defp plain_insert(%{source: _coll, schema: schema, prefix: _prefix}, fields, _returning) do
+  defp plain_insert(%{source: coll, schema: nil, prefix: _prefix}, fields, _returning) do
+    {op, document} =
+      case fields do
+        [[_ | _] | _] -> {:insert_all, cast_documents(nil, fields, coll)}
+        _ -> {:insert, cast_document(nil, fields, coll)}
+      end
+
+    {op, nil, document}
+  end
+
+  defp plain_insert(%{source: coll, schema: schema, prefix: _prefix}, fields, _returning) do
     pk = primary_key(schema)
 
     # We don't want to map directly to a struct, it can fuck up field-sources
-    document =
-      cast(struct(schema, %{}), Enum.into(fields, %{}), schema.__schema__(:fields))
-      |> apply_changes()
-
-    op =
+    {op, document} =
       case fields do
-        [[_ | _] | _] -> :insert_all
-        _ -> :insert
+        [[_ | _] | _] -> {:insert_all, cast_documents(schema, fields, coll)}
+        _ -> {:insert, cast_document(schema, fields, coll)}
       end
 
     {op, pk, document}
+  end
+
+  defp cast_documents(schema, field_list, coll) do
+    field_list
+    |> Enum.map(&cast_document(schema, &1, coll))
+  end
+
+  defp cast_document(nil, fields, coll) do
+    Enum.into(fields, %{"@metadata": %{"@collection": coll}})
+  end
+
+  defp cast_document(schema, fields, _coll) do
+    struct(schema, %{})
+    |> cast(Enum.into(fields, %{}), schema.__schema__(:fields))
+    |> apply_changes()
   end
 
   def delete_all(ecto_query, params) do
