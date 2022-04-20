@@ -232,12 +232,13 @@ defmodule Ecto.Integration.Custom do
     field(:uuid, Ecto.UUID)
     field(:"@metadata", :map, virtual: true)
 
-    many_to_many(:customs, Ecto.Integration.Custom,
-      join_through: "customs_customs",
-      join_keys: [custom_id1: :bid, custom_id2: :bid],
-      on_delete: :delete_all,
-      on_replace: :delete
-    )
+    # TODO
+    # many_to_many(:customs, Ecto.Integration.Custom,
+    #   join_through: "customs_customs",
+    #   join_keys: [custom_id1: :bid, custom_id2: :bid],
+    #   on_delete: :delete_all,
+    #   on_replace: :delete
+    # )
   end
 end
 
@@ -435,6 +436,10 @@ defmodule IdTest do
   schema "idtests" do
     field(:"@metadata", :map, virtual: true)
   end
+end
+
+defmodule Ecto.Integration.Foo do
+  defstruct [:title]
 end
 
 defimpl Jason.Encoder, for: Ecto.Association.NotLoaded do

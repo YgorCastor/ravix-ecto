@@ -183,11 +183,13 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   defp delete_all_query(raven_query, query_params) do
     raven_query
     |> append_conditions(query_params)
+    |> append_default_where_if_missing()
   end
 
   defp update_all_query(raven_query, query_params, updates) do
     raven_query
     |> append_conditions(query_params)
+    |> append_default_where_if_missing()
     |> append_updates(updates)
   end
 
@@ -293,7 +295,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
 
   defp append_default_where_if_missing(%RavenQuery{} = query) do
     case query.where_token == nil do
-      true -> RavenQuery.where(query, Ravix.RQL.Tokens.Condition.not_equal_to("id()", nil))
+      true -> transform_binary_op_into_where(query)
       false -> query
     end
   end
@@ -373,4 +375,22 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   end
 
   defp is_ecto_query(_), do: false
+
+  defp transform_binary_op_into_where(%RavenQuery{} = raven_query)
+       when raven_query.and_tokens != [] do
+    and_token = Enum.at(raven_query.and_tokens, 0)
+    raven_query = RavenQuery.where(raven_query, and_token.condition)
+
+    put_in(raven_query.and_tokens, Enum.drop(raven_query.and_tokens, 1))
+  end
+
+  defp transform_binary_op_into_where(%RavenQuery{} = raven_query)
+       when raven_query.or_tokens != [] do
+    or_token = Enum.at(raven_query.or_tokens, 0)
+    raven_query = RavenQuery.where(raven_query, or_token.condition)
+
+    put_in(raven_query.or_tokens, Enum.drop(raven_query.or_tokens, 1))
+  end
+
+  defp transform_binary_op_into_where(query), do: query
 end

@@ -4,6 +4,8 @@ defmodule Ravix.Ecto.Schema do
   require Ecto.Query
   require OK
 
+  import Ravix.Ecto.Parser.Shared
+
   alias Ravix.Ecto.Executor
   alias Ravix.Ecto.Parser.QueryParser
 
@@ -51,16 +53,20 @@ defmodule Ravix.Ecto.Schema do
   end
 
   @impl Ecto.Adapter.Schema
-  def update(adapter_meta, _query_meta, fields, filters, _returning, _opts) do
-    case Executor.update_one(adapter_meta, fields, filters) do
+  def update(adapter_meta, %{schema: schema}, fields, filters, _returning, _opts) do
+    pk = primary_key(schema)
+
+    case Executor.update_one(adapter_meta, fields, filters, pk) do
       {:ok, _} -> {:ok, []}
       {:error, :stale_entity} -> {:error, :stale}
     end
   end
 
   @impl Ecto.Adapter.Schema
-  def delete(adapter_meta, _schema_meta, filters, _options) do
-    case Executor.delete_one(adapter_meta, filters) do
+  def delete(adapter_meta, %{schema: schema}, filters, _options) do
+    pk = primary_key(schema)
+
+    case Executor.delete_one(adapter_meta, filters, pk) do
       {:ok, _} -> {:ok, []}
       {:error, :stale_entity} -> {:error, :stale}
     end

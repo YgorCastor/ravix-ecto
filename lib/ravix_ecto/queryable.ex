@@ -24,13 +24,13 @@ defmodule Ravix.Ecto.Queryable do
       %QueryInfo{kind: :delete} = query ->
         case Executor.query(query.raven_query, adapter_meta, :delete) do
           {:error, err} -> {:error, err}
-          _ -> {:ok, []}
+          _ -> {-1, nil}
         end
 
       %QueryInfo{kind: :update} = query ->
         case Executor.query(query.raven_query, adapter_meta, :update) do
           {:error, err} -> {:error, err}
-          _ -> {:ok, []}
+          _ -> {-1, nil}
         end
     end
   end

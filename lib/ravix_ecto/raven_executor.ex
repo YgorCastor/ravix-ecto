@@ -32,12 +32,12 @@ defmodule Ravix.Ecto.Executor do
     insert(store, [document], pk)
   end
 
-  def update_one(%{repo: repo}, fields, filters),
-    do: exec_update_one(Keyword.get(repo.config, :store), fields, filters)
+  def update_one(%{repo: repo}, fields, filters, pk),
+    do: exec_update_one(Keyword.get(repo.config, :store), fields, filters, pk)
 
-  defp exec_update_one(store, fields, filters) do
+  defp exec_update_one(store, fields, filters, pk) do
     OK.for do
-      id = Keyword.get(filters, :id)
+      id = Keyword.get(filters, pk)
       session_id <- store.open_session()
       result <- RavixSession.load(session_id, id)
       document_to_update <- filter_results(result["Results"], filters)
@@ -62,12 +62,12 @@ defmodule Ravix.Ecto.Executor do
     end
   end
 
-  def delete_one(%{repo: repo}, filters),
-    do: exec_delete_one(Keyword.get(repo.config, :store), filters)
+  def delete_one(%{repo: repo}, filters, pk),
+    do: exec_delete_one(Keyword.get(repo.config, :store), filters, pk)
 
-  defp exec_delete_one(store, filters) do
+  defp exec_delete_one(store, filters, pk) do
     OK.for do
-      id = Keyword.get(filters, :id)
+      id = Keyword.get(filters, pk)
       session_id <- store.open_session()
       result <- RavixSession.load(session_id, id)
       document_to_delete <- filter_results(result["Results"], filters)
@@ -99,7 +99,7 @@ defmodule Ravix.Ecto.Executor do
     after
       parsed_result
     rescue
-      err -> err
+      err -> {:error, err}
     end
   end
 
