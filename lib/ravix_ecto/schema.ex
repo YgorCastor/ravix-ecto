@@ -75,20 +75,24 @@ defmodule Ravix.Ecto.Schema do
   defp returning_fields_for_list(adapter_meta, schema_meta, result, metadata, pk, opts) do
     Enum.map(
       result,
-      &returning_fields(adapter_meta, schema_meta, &1, metadata, pk, opts)
+      &(returning_fields(adapter_meta, schema_meta, &1, metadata, pk, opts) |> Keyword.values())
     )
   end
 
   defp returning_fields(_adapter_meta, _schema_meta, _result, [], _primary_key, _opts), do: []
 
-  defp returning_fields(_adapter_meta, _schema_meta, [metadata], [pk], pk, _opts) do
+  defp returning_fields(adapter_meta, schema_meta, [metadata], fields_to_return, pk, opts) do
+    returning_fields(adapter_meta, schema_meta, metadata, fields_to_return, pk, opts)
+  end
+
+  defp returning_fields(_adapter_meta, _schema_meta, metadata, [pk], pk, _opts) do
     Keyword.put([], pk, metadata["@id"])
   end
 
   defp returning_fields(
          adapter_meta,
          schema_meta,
-         [metadata],
+         metadata,
          fields_to_return,
          pk,
          _opts
@@ -104,7 +108,7 @@ defmodule Ravix.Ecto.Schema do
     fields_to_return
     |> Enum.map(fn
       ^pk ->
-        {pk, metadata["@id"]}
+        {pk, metadata[:"@id"]}
 
       field ->
         {field, Map.get(db_entity, Atom.to_string(field))}

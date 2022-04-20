@@ -60,9 +60,6 @@ defmodule Ravix.Ecto.Queryable do
           Map.get(document, Atom.to_string(name))
         end
 
-      {:value, value, _field} ->
-        IO.inspect(value, label: :what_dis)
-
       _field ->
         document
     end)

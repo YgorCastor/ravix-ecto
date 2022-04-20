@@ -50,7 +50,7 @@ defmodule Ecto.Integration.RepoTest do
     end
 
     test "should fetch all using a named from" do
-      TestRepo.insert!(%Post{title: "hello"})
+      TestRepo.insert!(%Post{title: "hello"}, returning: true)
 
       query =
         from(p in Post, as: :post)
@@ -504,6 +504,149 @@ defmodule Ecto.Integration.RepoTest do
       assert {0, nil} = TestRepo.insert_all("posts", [])
       assert {0, nil} = TestRepo.insert_all({"posts", Post}, [])
     end
+
+    @tag :todo
+    test "should insert all with query for single fields" do
+      comment = TestRepo.insert!(%Comment{text: "1", lock_version: 1})
+
+      :timer.sleep(500)
+
+      text_query = from(c in Comment, select: c.text, where: [id: ^comment.id, lock_version: 1])
+
+      lock_version_query = from(c in Comment, select: c.lock_version, where: [id: ^comment.id])
+
+      rows = [
+        [text: "2", lock_version: lock_version_query],
+        [lock_version: lock_version_query, text: "3"],
+        [text: text_query],
+        [text: text_query, lock_version: lock_version_query],
+        [lock_version: 6, text: "6"]
+      ]
+
+      assert {5, nil} = TestRepo.insert_all(Comment, rows, [])
+
+      inserted_rows =
+        Comment
+        |> where([c], c.id != ^comment.id)
+        |> TestRepo.all()
+        |> Enum.sort(&(&1.text <= &2.text))
+
+      assert [
+               %Comment{text: "1"},
+               %Comment{text: "1", lock_version: 1},
+               %Comment{text: "2", lock_version: 1},
+               %Comment{text: "3", lock_version: 1},
+               %Comment{text: "6", lock_version: 6}
+             ] = inserted_rows
+    end
+
+    @tag :todo
+    test "insert_all with query and conflict target" do
+      {:ok, %Post{id: id}} =
+        TestRepo.insert(%Post{
+          title: "A generic title"
+        })
+
+      source =
+        from(p in Post,
+          select: %{
+            title: fragment("concat(?, ?, ?)", p.title, type(^" suffix ", :string), p.id)
+          }
+        )
+
+      assert {1, _} =
+               TestRepo.insert_all(Post, source, conflict_target: [:id], on_conflict: :replace_all)
+
+      expected_id = id + 1
+      expected_title = "A generic title suffix #{id}"
+
+      assert %Post{title: ^expected_title} = TestRepo.get(Post, expected_id)
+    end
+
+    @tag :todo
+    test "should insert_all with query and returning" do
+      {:ok, %Post{id: id}} =
+        TestRepo.insert(%Post{
+          title: "A generic title"
+        })
+
+      source =
+        from(p in Post,
+          select: %{
+            title: fragment("concat(?, ?, ?)", p.title, type(^" suffix ", :string), p.id)
+          }
+        )
+
+      assert {1, returns} = TestRepo.insert_all(Post, source, returning: [:id, :title])
+
+      expected_id = id + 1
+      expected_title = "A generic title suffix #{id}"
+      assert [%Post{id: ^expected_id, title: ^expected_title}] = returns
+    end
+
+    @tag :todo
+    test "insert_all with query and on_conflict" do
+      {:ok, %Post{id: id}} =
+        TestRepo.insert(%Post{
+          title: "A generic title"
+        })
+
+      source =
+        from(p in Post,
+          select: %{
+            title: fragment("concat(?, ?, ?)", p.title, type(^" suffix ", :string), p.id)
+          }
+        )
+
+      assert {1, _} = TestRepo.insert_all(Post, source, on_conflict: :replace_all)
+
+      expected_id = id + 1
+      expected_title = "A generic title suffix #{id}"
+
+      assert %Post{title: ^expected_title} = TestRepo.get(Post, expected_id)
+    end
+
+    @tag :todo
+    test "insert_all with query" do
+      {:ok, %Post{id: id}} =
+        TestRepo.insert(%Post{
+          title: "A generic title"
+        })
+
+      source =
+        from(p in Post,
+          select: %{
+            title: fragment("concat(?, ?, ?)", p.title, type(^" suffix ", :string), p.id)
+          }
+        )
+
+      assert {1, _} = TestRepo.insert_all(Post, source)
+
+      expected_id = id + 1
+      expected_title = "A generic title suffix #{id}"
+
+      assert %Post{title: ^expected_title} = TestRepo.get(Post, expected_id)
+    end
+
+    test "should insert all with returning with schema" do
+      assert {0, []} = TestRepo.insert_all(Comment, [], returning: true)
+      assert {0, nil} = TestRepo.insert_all(Comment, [], returning: false)
+
+      {2, results} =
+        TestRepo.insert_all(Comment, [[text: "1"], [text: "2"]], returning: [:text, :id])
+
+      [c1, c2] = results |> Enum.sort(&(&1.text <= &2.text))
+
+      assert %Comment{text: "1", __meta__: %{state: :loaded}} = c1
+      assert %Comment{text: "2", __meta__: %{state: :loaded}} = c2
+
+      {2, results} = TestRepo.insert_all(Comment, [[text: "3"], [text: "4"]], returning: true)
+
+      [c1, c2] = results |> Enum.sort(&(&1.text <= &2.text))
+
+      assert %Comment{text: "3", __meta__: %{state: :loaded}} = c1
+      assert %Comment{text: "4", __meta__: %{state: :loaded}} = c2
+    end
   end
 
   @tag :not_supported_yet
@@ -525,9 +668,48 @@ defmodule Ecto.Integration.RepoTest do
     end
   end
 
+  @tag :not_supported_yet
+  test "selects on fields should thrown an exception, the adapter does not support it yet" do
+    comment = TestRepo.insert!(%Comment{text: "1", lock_version: 1})
+    lock_version_query = from(c in Comment, select: c.lock_version, where: [id: ^comment.id])
+
+    rows = [
+      [text: "2", lock_version: lock_version_query]
+    ]
+
+    assert_raise ArgumentError, fn -> TestRepo.insert_all(Comment, rows, []) end
+  end
+
+  @tag :not_supported_yet
+  test "replace_all conflicts are not supported yet" do
+    source =
+      from(p in Post,
+        select: %{
+          title: fragment("concat(?, ?, ?)", p.title, type(^" suffix ", :string), p.id)
+        }
+      )
+
+    assert_raise ArgumentError, fn ->
+      TestRepo.insert_all(Post, source, conflict_target: [:id], on_conflict: :replace_all)
+    end
+  end
+
+  @tag :not_supported_yet
+  test "source queries not supported yet" do
+    source =
+      from(p in Post,
+        select: %{
+          title: fragment("concat(?, ?, ?)", p.title, type(^" suffix ", :string), p.id)
+        }
+      )
+
+    assert_raise ArgumentError, fn ->
+      TestRepo.insert_all(Post, source, returning: [:id, :title])
+    end
+  end
+
   @tag :aggregations
   describe "Aggregations on simple queries" do
-
     @tag :aggregations
     test "aggregate" do
       assert_raise Ecto.NoResultsError, fn ->

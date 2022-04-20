@@ -13,6 +13,16 @@ defmodule Ravix.Ecto.Parser.QueryParams do
     |> map_unless_empty
   end
 
+  def parse([{_, _} | _] = fields, keys, pk) do
+    fields
+    |> Keyword.take(keys)
+    |> parse(pk)
+  end
+
+  def parse(filter, pk) do
+    filter |> value(pk, "where clause") |> map_unless_empty
+  end
+
   def parse_update(%EctoQuery{updates: updates} = query, params, pk) do
     updates
     |> Enum.flat_map(fn %EctoQuery.QueryExpr{expr: expr} ->

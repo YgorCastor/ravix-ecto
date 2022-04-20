@@ -40,12 +40,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
         returning,
         _opts
       ) do
-    IO.inspect(coll, label: :insert_1)
-    IO.inspect(schema, label: :insert_1)
-    IO.inspect(prefix, label: :insert_1)
-    IO.inspect(docs, label: :insert_1)
-    IO.inspect(conflict_targets, label: :insert_1)
-    IO.inspect(returning, label: :insert_1)
+    raise ArgumentError, "The RavenDB Adapter does not support conflict targets yet"
   end
 
   def insert(
@@ -55,12 +50,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
         returning,
         _opts
       ) do
-    IO.inspect(coll, label: :insert_2)
-    IO.inspect(schema, label: :insert_2)
-    IO.inspect(prefix, label: :insert_2)
-    IO.inspect(fields, label: :insert_2)
-    IO.inspect(conflict_targets, label: :insert_2)
-    IO.inspect(returning, label: :insert_2)
+    raise ArgumentError, "The RavenDB Adapter does not support conflict targets yet"
   end
 
   def insert(
@@ -70,45 +60,27 @@ defmodule Ravix.Ecto.Parser.QueryParser do
         returning,
         opts
       ) do
-    IO.inspect(coll, label: :insert_3)
-    IO.inspect(schema, label: :insert_3)
-    IO.inspect(prefix, label: :insert_3)
-    IO.inspect(docs, label: :insert_3)
-    IO.inspect(conflict_targets, label: :insert_3)
-    IO.inspect(replace_fields, label: :insert_3)
-    IO.inspect(returning, label: :insert_3)
-    IO.inspect(opts, label: :insert_3)
+    raise ArgumentError, "The RavenDB Adapter does not support conflict targets yet"
   end
 
   def insert(
-        %{schema: schema} = schema_meta,
-        fields,
-        {[_ | _] = replace_fields, _, conflict_targets},
-        returning,
-        opts
-      ) do
-    IO.inspect(schema, label: :insert_4)
-    IO.inspect(fields, label: :insert_4)
-    IO.inspect(conflict_targets, label: :insert_4)
-    IO.inspect(replace_fields, label: :insert_4)
-    IO.inspect(returning, label: :insert_4)
-    IO.inspect(opts, label: :insert_4)
-  end
-
-  def insert(
-        %{source: coll, prefix: prefix},
-        [[_ | _] | _] = docs,
-        {%Ecto.Query{} = query, values, conflict_targets},
-        returning,
+        %{schema: _schema} = _schema_meta,
+        _fields,
+        {[_ | _] = _replace_fields, _, _conflict_targets},
+        _returning,
         _opts
       ) do
-    IO.inspect(coll, label: :insert_5)
-    IO.inspect(prefix, label: :insert_5)
-    IO.inspect(docs, label: :insert_5)
-    IO.inspect(conflict_targets, label: :insert_5)
-    IO.inspect(query, label: :insert_5)
-    IO.inspect(values, label: :insert_5)
-    IO.inspect(returning, label: :insert_5)
+    raise ArgumentError, "The RavenDB Adapter does not support conflict targets yet"
+  end
+
+  def insert(
+        %{source: _coll, prefix: _prefix},
+        [[_ | _] | _] = _docs,
+        {%Ecto.Query{} = _query, _values, _conflict_targets},
+        _returning,
+        _opts
+      ) do
+    raise ArgumentError, "The RavenDB Adapter does not support conflict targets yet"
   end
 
   def insert(
@@ -118,13 +90,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
         returning,
         _opts
       ) do
-    IO.inspect(coll, label: :insert_6)
-    IO.inspect(prefix, label: :insert_6)
-    IO.inspect(fields, label: :insert_6)
-    IO.inspect(conflict_targets, label: :insert_6)
-    IO.inspect(query, label: :insert_6)
-    IO.inspect(values, label: :insert_6)
-    IO.inspect(returning, label: :insert_6)
+    raise ArgumentError, "The RavenDB Adapter does not support conflict targets yet"
   end
 
   def insert(schema_meta, fields, {:raise, [], []}, returning, _opts),
@@ -162,10 +128,14 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   end
 
   defp cast_document(nil, fields, coll) do
+    check_params!(fields)
+
     Enum.into(fields, %{"@metadata": %{"@collection": coll}})
   end
 
   defp cast_document(schema, fields, _coll) do
+    check_params!(fields)
+
     struct(schema, %{})
     |> cast(Enum.into(fields, %{}), schema.__schema__(:fields))
     |> apply_changes()
@@ -386,4 +356,21 @@ defmodule Ravix.Ecto.Parser.QueryParser do
 
   defp order_by_expr({:desc, expr}, pk, query),
     do: {field(expr, pk, query, "order clause"), :desc}
+
+  defp check_params!(params) when is_list(params) do
+    case Enum.any?(params, fn {_field, value} -> is_ecto_query(value) end) do
+      true -> raise ArgumentError, "The RavenDB adapter does not support field queries yet!"
+      false -> nil
+    end
+  end
+
+  defp check_params!(_),
+    do: raise(ArgumentError, "The RavenDB adapter does not support source queries yet!")
+
+  defp is_ecto_query(fields) when is_tuple(fields) do
+    [ecto | _] = Tuple.to_list(fields)
+    is_struct(ecto, EctoQuery)
+  end
+
+  defp is_ecto_query(_), do: false
 end
