@@ -32,8 +32,13 @@ defmodule Ravix.Ecto.Conversions do
 
   def inject_params(doc, params, pk) when is_keyword(doc), do: document(doc, params, pk)
 
-  def inject_params(list, params, pk) when is_list(list),
-    do: map(list, &inject_params(&1, params, pk))
+  def inject_params(list, params, pk) when is_list(list) do
+    case map(list, &inject_params(&1, params, pk)) do
+      {:ok, values} when is_list(values) -> {:ok, values |> Enum.map(&keywords_to_object/1)}
+      {:ok, values} -> {:ok, values}
+      :error -> {:error, "Failed to inject the query parameters into a map"}
+    end
+  end
 
   def inject_params(
         %Ecto.Query.Tagged{tag: _tag, type: _type, value: {:^, _, [idx]} = _value},
@@ -47,7 +52,15 @@ defmodule Ravix.Ecto.Conversions do
     do: elem(params, idx) |> inject_params(params, pk)
 
   def inject_params(%{__struct__: _} = struct, _params, pk), do: from_ecto(struct, pk)
-  def inject_params(map, params, pk) when is_map(map), do: document(map, params, pk)
+
+  def inject_params(map, params, pk) when is_map(map) do
+    case document(map, params, pk) do
+      {:ok, values} when is_keyword(values) -> {:ok, keywords_to_object(values)}
+      {:ok, values} -> {:ok, values}
+      :error -> {:error, "Failed to inject the query parameters into a map"}
+    end
+  end
+
   def inject_params(value, _params, pk), do: from_ecto(value, pk)
 
   def from_ecto(%Ecto.Query.Tagged{tag: :binary_id, value: value}, _pk),
@@ -65,7 +78,8 @@ defmodule Ravix.Ecto.Conversions do
   def from_ecto({{_, _, _}, {_, _, _, _}} = value, _pk),
     do: Ecto.Type.adapter_dump(Ravix.Ecto.Adapter, :naive_datetime, value)
 
-  def from_ecto({_, _, _} = value, _pk), do: Ecto.Type.adapter_dump(Ravix.Ecto.Adapter, :date, value)
+  def from_ecto({_, _, _} = value, _pk),
+    do: Ecto.Type.adapter_dump(Ravix.Ecto.Adapter, :date, value)
 
   def from_ecto({_, _, _, _} = value, _pk),
     do: Ecto.Type.adapter_dump(Ravix.Ecto.Adapter, :time, value)
@@ -92,7 +106,7 @@ defmodule Ravix.Ecto.Conversions do
     end
   end
 
-  defp key(pk, pk), do: "id()"
+  defp key(pk, pk), do: :"id()"
 
   defp key(key, _) do
     key
@@ -116,4 +130,12 @@ defmodule Ravix.Ecto.Conversions do
       {_values, :error} -> :error
     end
   end
+
+  defp keywords_to_object(keyword_list) when is_keyword(keyword_list),
+    do: Enum.into(keyword_list, %{})
+
+  defp keywords_to_object(list) when is_list(list),
+    do: Enum.map(list, &keywords_to_object/1)
+
+  defp keywords_to_object(value), do: value
 end

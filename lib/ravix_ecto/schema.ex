@@ -125,7 +125,7 @@ defmodule Ravix.Ecto.Schema do
        when is_binary(collection) do
     query =
       RavenQuery.from(collection)
-      |> RavenQuery.where(Condition.equal_to("id()", pk))
+      |> RavenQuery.where(Condition.equal_to(:"id()", pk))
       |> RavenQuery.select(fields_to_return)
 
     case Executor.query(query, adapter_meta) do

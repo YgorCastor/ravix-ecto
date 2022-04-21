@@ -61,20 +61,14 @@ defmodule Ravix.Ecto.Parser.QueryParams do
   end
 
   defp pair({:is_nil, _, [expr]}, _, pk, query, place) do
-    IO.inspect(:here3)
-
     {field(expr, pk, query, place), nil}
   end
 
   defp pair({:in, _, [left, {:^, _, [0, 0]}]}, _params, pk, query, place) do
-    IO.inspect(:here)
-
     {field(left, pk, query, place), [{binary_op(:in), []}]}
   end
 
   defp pair({:in, _, [left, {:^, _, [ix, len]}]}, params, pk, query, place) do
-    IO.inspect(:here2)
-
     args =
       ix..(ix + len - 1)
       |> Enum.map(&elem(params, &1))

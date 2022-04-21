@@ -7,7 +7,6 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   end
 
   import Ravix.Ecto.Parser.Shared
-  import Ecto.Changeset
 
   alias Ecto.Query, as: EctoQuery
   alias Ravix.RQL.Query, as: RavenQuery

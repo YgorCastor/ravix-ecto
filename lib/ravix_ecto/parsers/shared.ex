@@ -24,7 +24,7 @@ defmodule Ravix.Ecto.Parser.Shared do
     end
   end
 
-  def field(pk, pk), do: "id()"
+  def field(pk, pk), do: :"id()"
   def field(key, _), do: key
 
   def field({{:., _, [{:&, _, [0]}, field]}, _, []}, pk, _query, _place), do: field(field, pk)

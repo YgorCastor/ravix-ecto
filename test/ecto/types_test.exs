@@ -200,6 +200,8 @@ defmodule Ecto.Integration.TypeTest do
     ints = [1, 2, 3]
     tag = TestRepo.insert!(%Tag{ints: ints})
 
+    :timer.sleep(500)
+
     assert TestRepo.all(from(t in Tag, where: t.ints == ^[], select: t.ints)) == []
     assert TestRepo.all(from(t in Tag, where: t.ints == ^[1, 2, 3], select: t.ints)) == [ints]
 
@@ -303,6 +305,9 @@ defmodule Ecto.Integration.TypeTest do
     assert dbitem.id
 
     {-1, _} = TestRepo.update_all(Order, set: [item: %{dbitem | price: 456}])
+
+    :timer.sleep(500)
+
     assert TestRepo.get!(Order, order.id).item.price == 456
   end
 
@@ -391,7 +396,10 @@ defmodule Ecto.Integration.TypeTest do
     assert item.valid_at == dbitem.valid_at
     assert dbitem.id
 
-    {1, _} = TestRepo.update_all(Tag, set: [items: [%{dbitem | price: 456}]])
+    {-1, _} = TestRepo.update_all(Tag, set: [items: [%{dbitem | price: 456}]])
+
+    :timer.sleep(500)
+
     assert (TestRepo.get!(Tag, tag.id).items |> hd).price == 456
   end
 
