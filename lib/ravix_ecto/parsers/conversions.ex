@@ -14,7 +14,7 @@ defmodule Ravix.Ecto.Conversions do
   end
 
   def to_ecto(%Ecto.Query.Tagged{type: type, value: value}) do
-    {:ok, dumped} = Ecto.Type.adapter_dump(Ravix.Ecto, type, value)
+    {:ok, dumped} = Ecto.Type.adapter_dump(Ravix.Ecto.Adapter, type, value)
     dumped
   end
 
@@ -54,7 +54,7 @@ defmodule Ravix.Ecto.Conversions do
     do: {:ok, value}
 
   def from_ecto(%Ecto.Query.Tagged{type: type, value: value}, _pk),
-    do: Ecto.Type.adapter_dump(Ravix.Ecto, type, value)
+    do: Ecto.Type.adapter_dump(Ravix.Ecto.Adapter, type, value)
 
   def from_ecto(%{__struct__: _} = value, _pk), do: {:ok, value}
   def from_ecto(map, pk) when is_map(map), do: document(map, pk)
@@ -63,12 +63,12 @@ defmodule Ravix.Ecto.Conversions do
   def from_ecto(value, _pk) when is_literal(value), do: {:ok, value}
 
   def from_ecto({{_, _, _}, {_, _, _, _}} = value, _pk),
-    do: Ecto.Type.adapter_dump(Ravix.Ecto, :naive_datetime, value)
+    do: Ecto.Type.adapter_dump(Ravix.Ecto.Adapter, :naive_datetime, value)
 
-  def from_ecto({_, _, _} = value, _pk), do: Ecto.Type.adapter_dump(Ravix.Ecto, :date, value)
+  def from_ecto({_, _, _} = value, _pk), do: Ecto.Type.adapter_dump(Ravix.Ecto.Adapter, :date, value)
 
   def from_ecto({_, _, _, _} = value, _pk),
-    do: Ecto.Type.adapter_dump(Ravix.Ecto, :time, value)
+    do: Ecto.Type.adapter_dump(Ravix.Ecto.Adapter, :time, value)
 
   def from_ecto(_value, _pk), do: :error
 

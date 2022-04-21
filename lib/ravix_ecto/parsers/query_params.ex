@@ -61,14 +61,20 @@ defmodule Ravix.Ecto.Parser.QueryParams do
   end
 
   defp pair({:is_nil, _, [expr]}, _, pk, query, place) do
+    IO.inspect(:here3)
+
     {field(expr, pk, query, place), nil}
   end
 
   defp pair({:in, _, [left, {:^, _, [0, 0]}]}, _params, pk, query, place) do
+    IO.inspect(:here)
+
     {field(left, pk, query, place), [{binary_op(:in), []}]}
   end
 
   defp pair({:in, _, [left, {:^, _, [ix, len]}]}, params, pk, query, place) do
+    IO.inspect(:here2)
+
     args =
       ix..(ix + len - 1)
       |> Enum.map(&elem(params, &1))
@@ -78,7 +84,7 @@ defmodule Ravix.Ecto.Parser.QueryParams do
   end
 
   defp pair({:in, _, [lhs, {{:., _, _}, _, _} = rhs]}, params, pk, query, place) do
-    {field(rhs, pk, query, place), value(lhs, params, pk, query, place)}
+    {field(rhs, pk, query, place), [{binary_op(:in), [value(lhs, params, pk, query, place)]}]}
   end
 
   defp pair({:not, _, [{:in, _, [left, {:^, _, [ix, len]}]}]}, params, pk, query, place) do
@@ -112,7 +118,10 @@ defmodule Ravix.Ecto.Parser.QueryParams do
   end
 
   defp pair({op, _, [left, right]}, params, pk, query, place) when op in ecto_binary_tokens() do
-    {field(left, pk, query, place), [{binary_op(op), value(right, params, pk, query, place)}]}
+    case value(right, params, pk, query, place) do
+      value when is_list(value) -> {field(left, pk, query, place), [{binary_op(:in), value}]}
+      value -> {field(left, pk, query, place), [{binary_op(op), value}]}
+    end
   end
 
   defp pair({op, _, args}, params, pk, query, place) when op in ecto_boolean_tokens() do

@@ -66,7 +66,7 @@ defmodule Ravix.Ecto.Planner do
   defp load_time(time), do: time
 
   defp load_date(date) do
-    {:ok, date |> DateTime.to_date()}
+    date |> Date.from_iso8601()
   end
 
   defp load_naive_datetime(datetime) when is_bitstring(datetime) do

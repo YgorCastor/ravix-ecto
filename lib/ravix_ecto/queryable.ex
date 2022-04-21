@@ -18,8 +18,13 @@ defmodule Ravix.Ecto.Queryable do
 
     case apply(QueryParser, function, [query, params]) do
       %QueryInfo{kind: :read} = query ->
-        {count, rows} = Executor.query(query.raven_query, adapter_meta)
-        {count, Enum.map(rows, fn row -> process_document(row, query, document_type) end)}
+        case Executor.query(query.raven_query, adapter_meta) do
+          {:error, err} ->
+            {:error, err}
+
+          {count, rows} ->
+            {count, Enum.map(rows, fn row -> process_document(row, query, document_type) end)}
+        end
 
       %QueryInfo{kind: :delete} = query ->
         case Executor.query(query.raven_query, adapter_meta, :delete) do
@@ -58,10 +63,14 @@ defmodule Ravix.Ecto.Queryable do
           Map.get(struct, name)
         else
           Map.get(document, Atom.to_string(name))
-        end
+        end |> remap_nil_list()
 
       _field ->
         document
     end)
   end
+
+  # Jason is encoding null as a list[nil], need to check
+  defp remap_nil_list([nil]), do: nil
+  defp remap_nil_list(value), do: value
 end
