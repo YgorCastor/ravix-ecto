@@ -196,13 +196,6 @@ defmodule Ecto.Integration.RepoTest do
       assert TestRepo.get_by(Post, uuid: post.uuid) == post
     end
 
-    test "should insert autogenerates for custom id type" do
-      id_entity = TestRepo.insert!(struct(IdTest))
-
-      assert id_entity.id
-      assert TestRepo.get_by(IdTest, id: id_entity.id) == id_entity
-    end
-
     test "should insert with user-assigned primary key" do
       assert %Post{id: "noice"} = TestRepo.insert!(%Post{id: "noice"})
     end
@@ -1021,7 +1014,6 @@ defmodule Ecto.Integration.RepoTest do
       :timer.sleep(500)
 
       assert ["url"] = Permalink |> select([p], p.url) |> TestRepo.all()
-      assert [1] = Permalink |> select([p], count(p.url)) |> TestRepo.all()
     end
 
     @tag :todo

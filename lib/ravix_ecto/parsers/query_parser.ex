@@ -133,12 +133,16 @@ defmodule Ravix.Ecto.Parser.QueryParser do
     Enum.into(fields, %{"@metadata": %{"@collection": coll}})
   end
 
-  defp cast_document(schema, fields, _coll) do
+  defp cast_document(schema, fields, coll) do
     check_params!(fields)
 
-    struct(schema, %{})
-    |> cast(Enum.into(fields, %{}), schema.__schema__(:fields))
-    |> apply_changes()
+    schema =
+      struct(schema, %{})
+      |> Map.from_struct()
+      |> Map.drop([:__meta__])
+      |> Map.put(:"@metadata", %{"@collection": coll})
+
+    Enum.into(fields, schema)
   end
 
   def delete_all(ecto_query, params) do

@@ -13,7 +13,7 @@ defmodule CustomPermalink do
   def cast(_), do: :error
 
   def dump(id) when is_binary(id) do
-    {:ok, id}
+    {:ok, id} |> IO.inspect()
   end
 
   def load(id) when is_binary(id) do

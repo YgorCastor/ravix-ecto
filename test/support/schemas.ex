@@ -23,7 +23,6 @@ defmodule Ecto.Integration.Post do
   use Ecto.Integration.Schema
   import Ecto.Changeset
 
-  @derive {Jason.Encoder, except: [:__meta__]}
   schema "posts" do
     # Same as integer
     field(:counter, :id)
@@ -98,7 +97,6 @@ defmodule Ecto.Integration.Comment do
   """
   use Ecto.Integration.Schema
 
-  @derive {Jason.Encoder, except: [:__meta__]}
   schema "comments" do
     field(:text, :string)
     field(:lock_version, :integer, default: 1)
@@ -124,7 +122,6 @@ defmodule Ecto.Integration.Permalink do
   """
   use Ecto.Integration.Schema
 
-  @derive {Jason.Encoder, except: [:__meta__]}
   schema "permalinks" do
     field(:url, :string, source: :uniform_resource_locator)
     field(:title, :string)
@@ -174,7 +171,6 @@ defmodule Ecto.Integration.User do
   """
   use Ecto.Integration.Schema
 
-  @derive {Jason.Encoder, except: [:__meta__]}
   schema "users" do
     field(:name, :string)
     field(:"@metadata", :map, virtual: true)
@@ -227,7 +223,6 @@ defmodule Ecto.Integration.Custom do
   use Ecto.Integration.Schema
 
   @primary_key {:bid, :binary_id, autogenerate: true}
-  @derive {Jason.Encoder, except: [:__meta__]}
   schema "customs" do
     field(:uuid, Ecto.UUID)
     field(:"@metadata", :map, virtual: true)
@@ -252,7 +247,6 @@ defmodule Ecto.Integration.Barebone do
   use Ecto.Integration.Schema
 
   @primary_key false
-  @derive {Jason.Encoder, except: [:__meta__]}
   schema "barebones" do
     field(:num, :integer)
     field(:"@metadata", :map, virtual: true)
@@ -269,7 +263,6 @@ defmodule Ecto.Integration.Pallet do
   use Ecto.Integration.Schema
 
   @primary_key false
-  @derive {Jason.Encoder, except: [:__meta__]}
   schema "pallet" do
     field(:id, :string, default: "pallet/")
     field(:num, :integer)
@@ -420,7 +413,6 @@ end
 defmodule Ecto.Integration.RAW do
   use Ecto.Integration.Schema
 
-  @derive {Jason.Encoder, except: [:__meta__]}
   schema "raws" do
     field(:text, :string)
     field(:lock_version, :integer, read_after_writes: true)
@@ -432,7 +424,6 @@ defmodule IdTest do
   use Ecto.Schema
 
   @primary_key {:id, CustomPermalink, autogenerate: true}
-  @derive {Jason.Encoder, except: [:__meta__]}
   schema "idtests" do
     field(:"@metadata", :map, virtual: true)
   end
