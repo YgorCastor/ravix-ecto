@@ -51,8 +51,7 @@ defmodule Ravix.Ecto.Parser.QueryParams do
 
   defp pair(expr, query, params, pk) do
     Enum.map(expr, fn {key, value} ->
-      check_update_op!(key, query)
-      {key, value(value, params, pk, query, "update clause")}
+      {update_op!(key, query), value(value, params, pk, query, "update clause")}
     end)
   end
 

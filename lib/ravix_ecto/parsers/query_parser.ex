@@ -224,18 +224,12 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   end
 
   defp append_updates(raven_query, updates) do
-    updates =
-      Enum.map(updates, fn
-        {op, fields} -> parse_update_fields(op, fields)
-      end)
-      |> :lists.flatten()
-
-    raven_query
-    |> Ravix.RQL.Query.update(updates)
+    updates = Enum.reduce(updates, %Ravix.RQL.Tokens.Update{}, &parse_update_function/2)
+    Ravix.RQL.Query.update(raven_query, updates)
   end
 
-  defp parse_update_fields(op, fields) do
-    Enum.map(fields, fn {name, value} -> %{operation: op, name: name, value: value} end)
+  defp parse_update_function({function, fields}, update_token) do
+    Enum.reduce(fields, update_token, fn {field, value}, acc -> function.(acc, field, value) end)
   end
 
   defp append_conditions(raven_query, query_params) do
