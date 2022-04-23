@@ -7,7 +7,6 @@ ExUnit.start(
 
 Application.put_env(:ecto, :primary_key_type, :binary_id)
 Application.put_env(:ecto, :async_integration_tests, false)
-Application.put_env(:mongodb_ecto, :allow_unsafe_upserts, true)
 
 defmodule Ecto.Integration.Repo do
   defmacro __using__(opts) do
