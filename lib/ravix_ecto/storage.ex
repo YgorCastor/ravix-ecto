@@ -7,7 +7,7 @@ defmodule Ravix.Ecto.Storage do
   alias Ravix.Connection
 
   @impl true
-  def storage_up(opts) do
+  def storage_up(_opts) do
     Logger.debug("[RAVIX-ECTO] Storages are auto-created on RavenDB")
     :ok
   end

@@ -6,6 +6,7 @@
 like a simple Ecto-SQL database.
 
 This adapter leverages the use of [Ravix](https://github.com/YgorCastor/ravix) as a driver between ecto and RavenDB
+
 ## Example
 
 ```elixir
@@ -42,11 +43,10 @@ defmodule Repo do
 end
 
 defmodule TestApplication do
-  use Supervisor
+  use Application
 
-  def init(_opts) do
+  def start(_opts, _) do
     children = [
-      {Ravix, [%{}]},
       {Repo, [%{}]}
     ]
 
@@ -54,10 +54,6 @@ defmodule TestApplication do
       children,
       strategy: :one_for_one
     )
-  end
-
-  def start_link(init_arg) do
-    Supervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
 end
 
@@ -111,7 +107,6 @@ but i've not implemented it yet (mostly because i think relationships in documen
 RavenDB is schemaless, so migrations are kind of useless. We can however use it to setup indexes and so on, but it's not implemented yet.
 
 # TODOs
-
 * Aggregations
 * Conflict Management
 * Associations
