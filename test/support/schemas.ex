@@ -35,7 +35,7 @@ defmodule Ecto.Integration.Post do
     field(:wrapped_visits, WrappedInteger)
     field(:intensity, :float)
     field(:bid, :binary_id)
-    field(:uuid, Ecto.Integration.TestRepo.uuid(), autogenerate: true, unique: true)
+    field(:uuid, Ecto.Integration.TestRepo.uuid(), autogenerate: true)
     field(:meta, :map)
     field(:links, {:map, :string})
     field(:intensities, {:map, :float})

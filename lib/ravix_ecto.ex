@@ -2,10 +2,12 @@ defmodule Ravix.Ecto.Adapter do
   @behaviour Ecto.Adapter
   @behaviour Ecto.Adapter.Queryable
   @behaviour Ecto.Adapter.Schema
+  @behaviour Ecto.Adapter.Storage
 
   @adapter Ravix.Ecto.Planner
   @queryable Ravix.Ecto.Queryable
   @schema Ravix.Ecto.Schema
+  @storage Ravix.Ecto.Storage
 
   defmacro __before_compile__(_env), do: :ok
 
@@ -52,4 +54,10 @@ defmodule Ravix.Ecto.Adapter do
   defdelegate update(repo, meta, fields, filters, returning, opts), to: @schema
 
   defdelegate delete(adapter_meta, schema_meta, filters, options), to: @schema
+
+  defdelegate storage_up(opts), to: @storage
+
+  defdelegate storage_down(opts), to: @storage
+
+  defdelegate storage_status(opts), to: @storage
 end
