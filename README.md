@@ -7,6 +7,14 @@ like a simple Ecto-SQL database.
 
 This adapter leverages the use of [Ravix](https://github.com/YgorCastor/ravix) as a driver between ecto and RavenDB
 
+## Installing
+
+Add Ravix Ecto to your mix.exs dependencies
+
+```elixir
+{:ravix_ecto, "~> 0.2.1"}
+```
+
 ## Example
 
 ```elixir
