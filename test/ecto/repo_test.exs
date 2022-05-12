@@ -114,13 +114,6 @@ defmodule Ecto.Integration.RepoTest do
                    end
     end
 
-    test "should raise if an id clash happens" do
-      clashing_id = 1
-
-      TestRepo.insert!(%Clash{name: "first", id: clashing_id})
-      TestRepo.insert!(%Clash{name: "second", id: clashing_id})
-    end
-
     test "should insert, update and delete with field source" do
       permalink = %Permalink{url: "url"}
       assert %Permalink{url: "url"} = inserted = TestRepo.insert!(permalink)
