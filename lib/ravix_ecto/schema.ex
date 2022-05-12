@@ -74,7 +74,7 @@ defmodule Ravix.Ecto.Schema do
 
   @impl Ecto.Adapter.Schema
   def autogenerate(:binary_id), do: UUID.uuid4()
-  def autogenerate(:embed_id), do: raise "[RAVIX-ECTO] RavenDB does not support auto-generated embed ids!"
+  def autogenerate(:embed_id),do: UUID.uuid4()
   def autogenerate(:id), do: raise "[RAVIX-ECTO] RavenDB does not support auto-generated integer ids!"
 
 
