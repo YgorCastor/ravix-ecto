@@ -14,6 +14,7 @@ defmodule Ecto.Integration.RepoTest do
     User,
     Comment,
     Custom,
+    Clash,
     Foo
   }
 
@@ -111,6 +112,13 @@ defmodule Ecto.Integration.RepoTest do
                    fn ->
                      TestRepo.insert!(%CompositePk{a: 1, b: 2, name: "first"})
                    end
+    end
+
+    test "should raise if an id clash happens" do
+      clashing_id = 1
+
+      TestRepo.insert!(%Clash{name: "first", id: clashing_id})
+      TestRepo.insert!(%Clash{name: "second", id: clashing_id})
     end
 
     test "should insert, update and delete with field source" do
