@@ -14,6 +14,7 @@ defmodule Ecto.Integration.RepoTest do
     User,
     Comment,
     Custom,
+    Clash,
     Foo
   }
 

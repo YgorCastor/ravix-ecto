@@ -420,6 +420,22 @@ defmodule Ecto.Integration.RAW do
   end
 end
 
+defmodule Ecto.Integration.Clash do
+  @moduledoc """
+  This module is used to test:
+
+    * ID Clashes
+
+  """
+  use Ecto.Schema
+
+  @primary_key {:id, :id, autogenerate: false}
+  @foreign_key_type :id
+  schema "clash" do
+    field(:name, :string)
+  end
+end
+
 defmodule IdTest do
   use Ecto.Schema
 

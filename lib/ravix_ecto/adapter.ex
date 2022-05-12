@@ -57,6 +57,7 @@ defmodule Ravix.Ecto.Planner do
   def loaders(:binary_id, type), do: [&load_objectid/1, type]
   def loaders(:uuid, type), do: [&load_binary(&1, :ecto_uuid), type]
   def loaders(:binary, type), do: [&load_binary(&1, :binary), type]
+  def loaders(:id, type), do: [&load_id/1, type]
   def loaders(:integer, type), do: [&load_integer/1, type]
 
   def loaders(_base, type) do
@@ -98,6 +99,15 @@ defmodule Ravix.Ecto.Planner do
     {:ok, objectid}
   end
 
+  defp load_id(id) when is_binary(id) do
+    {value, _} = Integer.parse(id)
+    {:ok, value}
+  end
+
+  defp load_id(id) when is_integer(id) do
+    {:ok, id}
+  end
+
   @impl true
   def dumpers(:time, type), do: [type, &dump_time/1]
   def dumpers(:date, type), do: [type, &dump_date/1]
@@ -108,6 +118,7 @@ defmodule Ravix.Ecto.Planner do
   def dumpers(:binary_id, type), do: [type, &dump_objectid/1]
   def dumpers(:uuid, type), do: [type, &dump_binary(&1, :ecto_uuid)]
   def dumpers(:binary, type), do: [type, &dump_binary(&1, :binary)]
+  def dumpers(:id, type), do: [type, &dump_id/1]
   def dumpers(_base, type), do: [type]
 
   defp dump_time({h, m, s, _}), do: Time.from_erl({h, m, s})
@@ -184,5 +195,9 @@ defmodule Ravix.Ecto.Planner do
 
   defp dump_objectid(objectid) do
     {:ok, objectid}
+  end
+
+  defp dump_id(id) when is_integer(id) do
+    {:ok, Integer.to_string(id)}
   end
 end
