@@ -3,15 +3,16 @@ defmodule Ravix.Ecto.Parser.Projection do
 
   import Ravix.Ecto.Parser.Shared
 
-  @aggregate_ops [:sum, :avg, :min, :max]
+  @aggregate_ops [:sum, :count]
+  @not_supported_aggregate_ops [:min, :max, :avg]
 
   def project(%EctoQuery{select: nil}, _params, _from), do: {:find, %{}, []}
 
   def project(
-         %EctoQuery{select: %EctoQuery.SelectExpr{fields: fields} = _select} = query,
-         params,
-         from
-       ) do
+        %EctoQuery{select: %EctoQuery.SelectExpr{fields: fields} = _select} = query,
+        params,
+        from
+      ) do
     project(fields, params, from, query, %{}, [])
   end
 
@@ -19,13 +20,13 @@ defmodule Ravix.Ecto.Parser.Projection do
 
   # TODO this project function is the same as the one below with a different pattern
   def project(
-         [{:&, _, [0]} = field | rest],
-         params,
-         {_, nil, _} = from,
-         query,
-         _pacc,
-         facc
-       ) do
+        [{:&, _, [0]} = field | rest],
+        params,
+        {_, nil, _} = from,
+        query,
+        _pacc,
+        facc
+      ) do
     facc =
       case project(rest, params, from, query, %{}, [field | facc]) do
         {:find, _, facc} ->
@@ -42,13 +43,13 @@ defmodule Ravix.Ecto.Parser.Projection do
   end
 
   def project(
-         [{:&, _, [0, nil, _]} = field | rest],
-         params,
-         {_, nil, _} = from,
-         query,
-         _pacc,
-         facc
-       ) do
+        [{:&, _, [0, nil, _]} = field | rest],
+        params,
+        {_, nil, _} = from,
+        query,
+        _pacc,
+        facc
+      ) do
     # Model is nil, we want empty project, but still extract fields
     facc =
       case project(rest, params, from, query, %{}, [field | facc]) do
@@ -66,13 +67,13 @@ defmodule Ravix.Ecto.Parser.Projection do
   end
 
   def project(
-         [{:&, _, [0, nil, _]} = field | rest],
-         params,
-         {_, model, pk} = from,
-         query,
-         pacc,
-         facc
-       ) do
+        [{:&, _, [0, nil, _]} = field | rest],
+        params,
+        {_, model, pk} = from,
+        query,
+        pacc,
+        facc
+      ) do
     pacc = Enum.into(model.__schema__(:fields), pacc, &{field(&1, pk), true})
     facc = [field | facc]
 
@@ -80,13 +81,13 @@ defmodule Ravix.Ecto.Parser.Projection do
   end
 
   def project(
-         [{:&, _, [0, fields, _]} = field | rest],
-         params,
-         {_, _model, pk} = from,
-         query,
-         pacc,
-         facc
-       ) do
+        [{:&, _, [0, fields, _]} = field | rest],
+        params,
+        {_, _model, pk} = from,
+        query,
+        pacc,
+        facc
+      ) do
     pacc = Enum.into(fields, pacc, &{field(&1, pk), true})
     facc = [field | facc]
 
@@ -113,7 +114,7 @@ defmodule Ravix.Ecto.Parser.Projection do
 
   # Keyword and interpolated fragments
   def project([{:fragment, _, [args]} = field | rest], params, from, query, pacc, facc)
-       when is_list(args) or tuple_size(args) == 3 do
+      when is_list(args) or tuple_size(args) == 3 do
     {_, _, pk} = from
 
     pacc =
@@ -126,11 +127,18 @@ defmodule Ravix.Ecto.Parser.Projection do
     project(rest, params, from, query, pacc, facc)
   end
 
+  def project([{op, _, [name]}], _params, from, query, pacc, _facc)
+      when pacc == %{} and op in @aggregate_ops do
+    {_, _, pk} = from
+    name = field(name, pk, query, "select clause")
+    {:aggregate, %{"#{Atom.to_string(op)}(#{name})": true}, name}
+  end
+
   def project([{op, _, _} | _rest], _params, _from, query, _pacc, _facc)
-       when op in @aggregate_ops do
+      when op in @not_supported_aggregate_ops do
     error(
       query,
-      ": Aggregation operations aren't supported in the current version"
+      ": Min and Max functions are not supported by RavenDB"
     )
   end
 

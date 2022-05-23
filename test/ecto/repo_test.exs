@@ -460,6 +460,20 @@ defmodule Ecto.Integration.RepoTest do
       assert query |> TestRepo.exists?() == true
     end
 
+    test "should allow group by id" do
+      TestRepo.insert!(%Post{title: "1", visits: 2})
+      TestRepo.insert!(%Post{title: "2", visits: 1})
+
+      query =
+        from(p in Post,
+          select: p.visits,
+          group_by: [p.visits, p.id],
+          where: p.visits > 1
+        )
+
+      assert query |> TestRepo.exists?() == true
+    end
+
     test "havings should throw an exception, RavenDB does not support it" do
       TestRepo.insert!(%Post{title: "1", visits: 2})
 
