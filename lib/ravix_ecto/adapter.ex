@@ -198,6 +198,6 @@ defmodule Ravix.Ecto.Planner do
   end
 
   defp dump_id(id) when is_integer(id) do
-    {:ok, Integer.to_string(id)}
+    {:ok, id}
   end
 end
