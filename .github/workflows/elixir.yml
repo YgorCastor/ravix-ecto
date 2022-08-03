@@ -28,7 +28,7 @@ jobs:
         with:
           EXCLUDE_MERGED: "true"
       - name: Install Git/Curl/GNU Tar
-        run: apk add --no-cache curl tar git
+        run: apk add --no-cache curl tar git make gcc libc-dev g++
       - name: Fix git permissions
         run: git config --global --add safe.directory /__w/ravix-ecto/ravix-ecto
       - uses: actions/checkout@v3
