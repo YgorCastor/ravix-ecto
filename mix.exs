@@ -66,7 +66,8 @@ defmodule RavixEcto.MixProject do
         "Ygor Castor"
       ],
       licenses: ["Apache-2.0"],
-      links: %{"GitHub" => "https://github.com/YgorCastor/ravix-ecto"}
+      links: %{"GitHub" => "https://github.com/YgorCastor/ravix-ecto"},
+      sponsor: "ycastor.eth"
     ]
   end
 end
