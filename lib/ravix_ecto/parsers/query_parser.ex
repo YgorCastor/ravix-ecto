@@ -27,7 +27,8 @@ defmodule Ravix.Ecto.Parser.QueryParser do
           kind: :read,
           fields: fields,
           pk: pk,
-          raven_query: find_all_query(raven_query, ecto_query, query_params, projection, pk)
+          raven_query:
+            find_all_query(raven_query, ecto_query, query_params, projection, pk, model)
         }
     end
   end
@@ -173,12 +174,12 @@ defmodule Ravix.Ecto.Parser.QueryParser do
     }
   end
 
-  defp find_all_query(raven_query, ecto_query, query_params, projection, pk) do
+  defp find_all_query(raven_query, ecto_query, query_params, projection, pk, model) do
     raven_query
     |> append_conditions(query_params)
     |> append_default_where_if_missing()
     |> parse_projections(projection)
-    |> parse_order(ecto_query, pk)
+    |> parse_order(ecto_query, model, pk)
     |> parse_grouping(ecto_query, pk)
     |> limit_skip(ecto_query, query_params, pk)
   end
@@ -297,10 +298,15 @@ defmodule Ravix.Ecto.Parser.QueryParser do
     end
   end
 
-  defp parse_order(%RavenQuery{} = raven_query, %EctoQuery{order_bys: order_bys} = query, pk) do
+  defp parse_order(
+         %RavenQuery{} = raven_query,
+         %EctoQuery{order_bys: order_bys} = query,
+         model,
+         pk
+       ) do
     case order_bys
          |> Enum.flat_map(fn %EctoQuery.QueryExpr{expr: expr} ->
-           Enum.map(expr, &order_by_expr(&1, pk, query))
+           Enum.map(expr, &order_by_expr(&1, model, pk, query))
          end) do
       [] ->
         raven_query
@@ -350,11 +356,21 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   defp offset_limit(%EctoQuery.QueryExpr{expr: expr}, params, pk, query, where),
     do: value(expr, params, pk, query, where)
 
-  defp order_by_expr({:asc, expr}, pk, query),
-    do: {field(expr, pk, query, "order clause"), :asc}
+  defp order_by_expr({:asc, expr}, model, pk, query),
+    do: order_by_expr(expr, :asc, model, pk, query)
 
-  defp order_by_expr({:desc, expr}, pk, query),
-    do: {field(expr, pk, query, "order clause"), :desc}
+  defp order_by_expr({:desc, expr}, model, pk, query),
+    do: order_by_expr(expr, :desc, model, pk, query)
+
+  defp order_by_expr(expr, order, model, pk, query) do
+    field_name = field(expr, pk, query, "order clause")
+
+    %Tokens.Order.Field{
+      name: field_name,
+      order: order,
+      type: orderby_type(model, field_name)
+    }
+  end
 
   defp check_params!(params) when is_list(params) do
     case Enum.any?(params, fn {_field, value} -> is_ecto_query(value) end) do
@@ -390,4 +406,16 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   end
 
   defp transform_binary_op_into_where(query), do: query
+
+  defp orderby_type(nil, _field), do: :lexicographically
+
+  defp orderby_type(model, field) do
+    case model.__schema__(:type, field) do
+      :float -> :float
+      :integer -> :number
+      :id -> :number
+      :decimal -> :float
+      _ -> :lexicographically
+    end
+  end
 end
