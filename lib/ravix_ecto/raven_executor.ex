@@ -6,6 +6,12 @@ defmodule Ravix.Ecto.Executor do
 
   import Ravix.RQL.Query
 
+  @metadata_updateable_fields [
+    "@change-vector",
+    "@collection",
+    "@expires"
+  ]
+
   def insert(%{repo: repo}, document, pk),
     do: insert(Keyword.get(repo.config, :store), document, pk)
 
@@ -36,16 +42,15 @@ defmodule Ravix.Ecto.Executor do
     do: exec_update_one(Keyword.get(repo.config, :store), fields, filters, pk)
 
   defp exec_update_one(store, fields, filters, pk) do
+    IO.inspect(fields, label: :here)
+
     OK.for do
       id = Keyword.get(filters, pk)
       session_id <- store.open_session()
       result <- RavixSession.load(session_id, id)
       document_to_update <- filter_results(result["Results"], filters)
 
-      updated_document =
-        Enum.reduce(fields, document_to_update, fn {field, value}, document ->
-          put_in(document[Atom.to_string(field)], value)
-        end)
+      updated_document = Enum.reduce(fields, document_to_update, &parse_update_field/2)
 
       _ <-
         RavixSession.store(
@@ -60,6 +65,19 @@ defmodule Ravix.Ecto.Executor do
     after
       updated_document
     end
+  end
+
+  defp parse_update_field({:"@metadata", value}, document) do
+    updated_metadata =
+      document["@metadata"]
+      |> Map.take(@metadata_updateable_fields)
+      |> Map.merge(Map.take(value, @metadata_updateable_fields))
+
+    put_in(document["@metadata"], updated_metadata)
+  end
+
+  defp parse_update_field({field, value}, document) do
+    put_in(document[Atom.to_string(field)], value)
   end
 
   def delete_one(%{repo: repo}, filters, pk),
