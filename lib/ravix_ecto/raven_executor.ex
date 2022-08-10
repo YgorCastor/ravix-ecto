@@ -42,8 +42,6 @@ defmodule Ravix.Ecto.Executor do
     do: exec_update_one(Keyword.get(repo.config, :store), fields, filters, pk)
 
   defp exec_update_one(store, fields, filters, pk) do
-    IO.inspect(fields, label: :here)
-
     OK.for do
       id = Keyword.get(filters, pk)
       session_id <- store.open_session()
