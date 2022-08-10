@@ -34,31 +34,31 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   end
 
   def insert(
-        %{source: coll, schema: schema, prefix: prefix},
-        [[_ | _] | _] = docs,
-        {:nothing, [], conflict_targets},
-        returning,
+        %{source: _coll, schema: _schema, prefix: _prefix},
+        [[_ | _] | _] = _docs,
+        {:nothing, [], _conflict_targets},
+        _returning,
         _opts
       ) do
     raise ArgumentError, "The RavenDB Adapter does not support conflict targets yet"
   end
 
   def insert(
-        %{source: coll, schema: schema, prefix: prefix},
-        fields,
-        {:nothing, [], conflict_targets},
-        returning,
+        %{source: _coll, schema: _schema, prefix: _prefix},
+        _fields,
+        {:nothing, [], _conflict_targets},
+        _returning,
         _opts
       ) do
     raise ArgumentError, "The RavenDB Adapter does not support conflict targets yet"
   end
 
   def insert(
-        %{schema: schema, source: coll, prefix: prefix},
-        [[_ | _] | _] = docs,
-        {[_ | _] = replace_fields, _, conflict_targets},
-        returning,
-        opts
+        %{schema: _schema, source: _coll, prefix: _prefix},
+        [[_ | _] | _] = _docs,
+        {[_ | _] = _replace_fields, _, _conflict_targets},
+        _returning,
+        _opts
       ) do
     raise ArgumentError, "The RavenDB Adapter does not support conflict targets yet"
   end
@@ -84,10 +84,10 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   end
 
   def insert(
-        %{source: coll, prefix: prefix},
-        fields,
-        {%Ecto.Query{} = query, values, conflict_targets},
-        returning,
+        %{source: _coll, prefix: _prefix},
+        _fields,
+        {%Ecto.Query{} = _query, _values, _conflict_targets},
+        _returning,
         _opts
       ) do
     raise ArgumentError, "The RavenDB Adapter does not support conflict targets yet"
@@ -130,7 +130,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
   defp cast_document(nil, fields, coll) do
     check_params!(fields)
 
-    Enum.into(fields, %{"@metadata": %{"@collection": coll}})
+    Enum.into(parse_metadata(fields, coll), %{})
   end
 
   defp cast_document(schema, fields, coll) do
@@ -140,9 +140,26 @@ defmodule Ravix.Ecto.Parser.QueryParser do
       struct(schema, %{})
       |> Map.from_struct()
       |> Map.drop([:__meta__])
-      |> Map.put(:"@metadata", %{"@collection": coll})
 
-    Enum.into(fields, schema)
+    Enum.into(parse_metadata(fields, coll), schema)
+  end
+
+  defp parse_metadata(fields, collection) do
+    {_, updated_fields} =
+      Keyword.get_and_update(fields, :"@metadata", fn value ->
+        case value do
+          nil ->
+            {nil, %{"@collection" => collection}}
+
+          metadata ->
+            {
+              metadata,
+              metadata |> Map.put("@collection", collection)
+            }
+        end
+      end)
+
+    updated_fields
   end
 
   def delete_all(ecto_query, params) do
@@ -288,6 +305,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
       |> RavenQuery.select(
         projections
         |> Map.filter(fn {_key, value} -> value end)
+        |> Map.drop([:"@metadata"])
         |> Map.keys()
       )
 
