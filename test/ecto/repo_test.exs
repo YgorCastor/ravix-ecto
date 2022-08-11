@@ -14,7 +14,6 @@ defmodule Ecto.Integration.RepoTest do
     User,
     Comment,
     Custom,
-    Clash,
     Foo
   }
 
@@ -89,10 +88,23 @@ defmodule Ecto.Integration.RepoTest do
     end
 
     test "should insert, update and delete" do
-      post = %Post{title: "insert, update, delete", visits: 1}
+      {:ok, cost} = Decimal.cast("1234325.34324234")
+
+      post = %Post{
+        title: "insert, update, delete",
+        visits: 1,
+        cost: cost,
+        post_time: ~T[23:00:07]
+      }
+
       meta = post.__meta__
 
-      assert %Post{} = inserted = TestRepo.insert!(post)
+      assert %Post{cost: returned_cost, post_time: returned_time} =
+               inserted = TestRepo.insert!(post)
+
+      assert ^cost = returned_cost
+      assert ~T[23:00:07] = returned_time
+
       assert %Post{} = updated = TestRepo.update!(Ecto.Changeset.change(inserted, visits: 2))
 
       deleted_meta = put_in(meta.state, :deleted)
