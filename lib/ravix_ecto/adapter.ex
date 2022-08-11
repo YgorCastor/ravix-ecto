@@ -1,6 +1,8 @@
 defmodule Ravix.Ecto.Planner do
   @behaviour Ecto.Adapter
 
+  require Decimal
+
   @doc false
   @impl true
   defmacro __before_compile__(_env) do
@@ -59,6 +61,7 @@ defmodule Ravix.Ecto.Planner do
   def loaders(:binary, type), do: [&load_binary(&1, :binary), type]
   def loaders(:id, type), do: [&load_id/1, type]
   def loaders(:integer, type), do: [&load_integer/1, type]
+  def loaders(:decimal, type), do: [&load_decimal/1, type]
 
   def loaders(_base, type) do
     [type]
@@ -108,6 +111,10 @@ defmodule Ravix.Ecto.Planner do
     {:ok, id}
   end
 
+  def load_decimal(decimal) do
+    Decimal.cast(decimal)
+  end
+
   @impl true
   def dumpers(:time, type), do: [type, &dump_time/1]
   def dumpers(:date, type), do: [type, &dump_date/1]
@@ -119,6 +126,7 @@ defmodule Ravix.Ecto.Planner do
   def dumpers(:uuid, type), do: [type, &dump_binary(&1, :ecto_uuid)]
   def dumpers(:binary, type), do: [type, &dump_binary(&1, :binary)]
   def dumpers(:id, type), do: [type, &dump_id/1]
+  def dumpers(:decimal, type), do: [type, &dump_decimal/1]
   def dumpers(_base, type), do: [type]
 
   defp dump_time({h, m, s, _}), do: Time.from_erl({h, m, s})
@@ -199,5 +207,20 @@ defmodule Ravix.Ecto.Planner do
 
   defp dump_id(id) when is_integer(id) do
     {:ok, id}
+  end
+
+  def dump_decimal(decimal) when is_number(decimal) do
+    {:ok, Integer.to_string(decimal)}
+  end
+
+  def dump_decimal(decimal) when Decimal.is_decimal(decimal) do
+    {:ok, Decimal.to_string(decimal, :raw)}
+  end
+
+  def dump_decimal(decimal) do
+    case Decimal.is_decimal(decimal) do
+      true -> {:ok, decimal}
+      false -> {:error, :not_a_decimal}
+    end
   end
 end
