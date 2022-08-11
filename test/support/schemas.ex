@@ -40,6 +40,7 @@ defmodule Ecto.Integration.Post do
     field(:links, {:map, :string})
     field(:intensities, {:map, :float})
     field(:posted, :date)
+    field(:post_time, :time)
     field(:"@metadata", :map, virtual: true)
     has_many(:comments, Ecto.Integration.Comment, on_delete: :delete_all, on_replace: :delete)
     has_many(:force_comments, Ecto.Integration.Comment, on_replace: :delete_if_exists)

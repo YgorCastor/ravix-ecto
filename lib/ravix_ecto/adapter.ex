@@ -67,7 +67,7 @@ defmodule Ravix.Ecto.Planner do
     [type]
   end
 
-  defp load_time(time), do: time
+  defp load_time(time), do: Time.from_iso8601(time)
 
   defp load_date(date) do
     date |> Date.from_iso8601()
@@ -130,7 +130,7 @@ defmodule Ravix.Ecto.Planner do
   def dumpers(_base, type), do: [type]
 
   defp dump_time({h, m, s, _}), do: Time.from_erl({h, m, s})
-  defp dump_time(%Time{} = time), do: time
+  defp dump_time(%Time{} = time), do: {:ok, time}
   defp dump_time(_), do: :error
 
   defp dump_date({_, _, _} = date) do
