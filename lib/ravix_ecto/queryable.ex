@@ -19,8 +19,11 @@ defmodule Ravix.Ecto.Queryable do
     case apply(QueryParser, function, [query, params]) do
       %QueryInfo{kind: :read} = query ->
         case Executor.query(query.raven_query, adapter_meta) do
+          {:error, :stale} ->
+            raise %Ecto.StaleEntryError{}
+
           {:error, err} ->
-            {:error, err}
+            raise %Ecto.NoResultsError{message: "Failed to query the database: #{inspect(err)}"}
 
           {count, rows} ->
             {count, Enum.map(rows, fn row -> process_document(row, query, document_type) end)}
@@ -28,14 +31,26 @@ defmodule Ravix.Ecto.Queryable do
 
       %QueryInfo{kind: :delete} = query ->
         case Executor.query(query.raven_query, adapter_meta, :delete) do
-          {:error, err} -> {:error, err}
-          _ -> {-1, nil}
+          {:error, :stale} ->
+            raise %Ecto.StaleEntryError{}
+
+          {:error, err} ->
+            raise %Ecto.NoResultsError{message: "Failed to query the database: #{inspect(err)}"}
+
+          _ ->
+            {-1, nil}
         end
 
       %QueryInfo{kind: :update} = query ->
         case Executor.query(query.raven_query, adapter_meta, :update) do
-          {:error, err} -> {:error, err}
-          _ -> {-1, nil}
+          {:error, :stale} ->
+            raise %Ecto.StaleEntryError{}
+
+          {:error, err} ->
+            raise %Ecto.NoResultsError{message: "Failed to query the database: #{inspect(err)}"}
+
+          _ ->
+            {-1, nil}
         end
     end
   end
@@ -53,14 +68,15 @@ defmodule Ravix.Ecto.Queryable do
 
   defp get_struct_from_query(_), do: nil
 
-  defp process_document(document, %{fields: fields, pk: pk}, struct) do
+  defp process_document(document, %{fields: fields}, struct) do
     Enum.map(fields, fn
       {:field, name, _field} ->
         if Map.has_key?(document, Atom.to_string(name)) == false && struct != nil do
           Map.get(struct, name)
         else
           Map.get(document, Atom.to_string(name))
-        end |> remap_nil_list()
+        end
+        |> remap_nil_list()
 
       _field ->
         document
