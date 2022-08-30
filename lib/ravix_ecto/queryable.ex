@@ -20,7 +20,7 @@ defmodule Ravix.Ecto.Queryable do
       %QueryInfo{kind: :read} = query ->
         case Executor.query(query.raven_query, adapter_meta) do
           {:error, :stale} ->
-            raise %Ecto.StaleEntryError{}
+            raise %Ecto.StaleEntryError{message: "The query results are stale"}
 
           {:error, err} ->
             raise %Ecto.NoResultsError{message: "Failed to query the database: #{inspect(err)}"}
@@ -32,7 +32,7 @@ defmodule Ravix.Ecto.Queryable do
       %QueryInfo{kind: :delete} = query ->
         case Executor.query(query.raven_query, adapter_meta, :delete) do
           {:error, :stale} ->
-            raise %Ecto.StaleEntryError{}
+            raise %Ecto.StaleEntryError{message: "The query results are stale"}
 
           {:error, err} ->
             raise %Ecto.NoResultsError{message: "Failed to query the database: #{inspect(err)}"}
@@ -44,7 +44,7 @@ defmodule Ravix.Ecto.Queryable do
       %QueryInfo{kind: :update} = query ->
         case Executor.query(query.raven_query, adapter_meta, :update) do
           {:error, :stale} ->
-            raise %Ecto.StaleEntryError{}
+            raise %Ecto.StaleEntryError{message: "The query results are stale"}
 
           {:error, err} ->
             raise %Ecto.NoResultsError{message: "Failed to query the database: #{inspect(err)}"}
