@@ -39,7 +39,7 @@ defmodule RavixEcto.MixProject do
   defp deps do
     [
       {:ecto, "~> 3.7"},
-      {:ravix, "~> 0.1"},
+      {:ravix, "~> 0.6"},
       {:ok, "~> 2.3"},
       {:gradient, github: "esl/gradient", only: [:dev, :test], runtime: false},
       {:elixir_sense, github: "elixir-lsp/elixir_sense", only: [:dev]},
