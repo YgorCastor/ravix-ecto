@@ -43,13 +43,13 @@ defmodule RavixEcto.MixProject do
       {:ok, "~> 2.3"},
       {:gradient, github: "esl/gradient", only: [:dev, :test], runtime: false},
       {:elixir_sense, github: "elixir-lsp/elixir_sense", only: [:dev]},
-      {:ex_doc, "~> 0.28.3", only: :dev, runtime: false},
-      {:dialyxir, "~> 1.1.0", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.28", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.1", only: [:dev, :test], runtime: false},
       {:ex_machina, "~> 2.7", only: :test},
-      {:assertions, "~> 0.19.0", only: :test},
-      {:excoveralls, "~> 0.14.4", only: :test},
+      {:assertions, "~> 0.19", only: :test},
+      {:excoveralls, "~> 0.14", only: :test},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:version_tasks, "~> 0.12.0", only: [:dev, :test], runtime: false}
+      {:version_tasks, "~> 0.12", only: [:dev, :test], runtime: false}
     ]
   end
 
