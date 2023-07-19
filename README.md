@@ -12,7 +12,7 @@ This adapter leverages the use of [Ravix](https://github.com/YgorCastor/ravix) a
 Add Ravix Ecto to your mix.exs dependencies
 
 ```elixir
-{:ravix_ecto, "~> 0.3.6"}
+{:ravix_ecto, "~> 0.3.7"}
 ```
 
 ## Example
