@@ -450,6 +450,16 @@ defmodule Ecto.Integration.RepoTest do
       assert post2 == query |> limit(1) |> offset(1) |> TestRepo.one()
     end
 
+    test "limit and offset with pinned vars" do
+      post = TestRepo.insert!(%Post{title: "1"})
+
+      limit = 1
+      offset = 0
+
+      query = from(p in Post)
+      assert post == query |> limit(^limit) |> offset(^offset) |> TestRepo.one()
+    end
+
     test "exists? should work" do
       TestRepo.insert!(%Post{title: "1", visits: 2})
       TestRepo.insert!(%Post{title: "2", visits: 1})

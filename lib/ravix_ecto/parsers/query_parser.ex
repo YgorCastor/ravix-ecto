@@ -19,7 +19,8 @@ defmodule Ravix.Ecto.Parser.QueryParser do
 
     {coll, model, raven_query, pk} = from(ecto_query)
     params = List.to_tuple(params)
-    query_params = QueryParams.parse(ecto_query, params, pk)
+    query_conditions = QueryParams.parse_conditions(ecto_query, params, pk)
+    limit_params = QueryParams.parse_limit_and_offset(ecto_query, params)
 
     case Projection.project(ecto_query, params, {coll, model, pk}) do
       {:find, projection, fields} ->
@@ -28,7 +29,15 @@ defmodule Ravix.Ecto.Parser.QueryParser do
           fields: fields,
           pk: pk,
           raven_query:
-            find_all_query(raven_query, ecto_query, query_params, projection, pk, model)
+            find_all_query(
+              raven_query,
+              ecto_query,
+              query_conditions,
+              limit_params,
+              projection,
+              pk,
+              model
+            )
         }
     end
   end
@@ -167,7 +176,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
 
     {_coll, _model, raven_query, pk} = from(ecto_query)
     params = List.to_tuple(params)
-    query_params = QueryParams.parse(ecto_query, params, pk)
+    query_params = QueryParams.parse_conditions(ecto_query, params, pk)
 
     %QueryInfo{
       kind: :delete,
@@ -181,7 +190,7 @@ defmodule Ravix.Ecto.Parser.QueryParser do
 
     {_coll, _model, raven_query, pk} = from(ecto_query)
     params = List.to_tuple(params)
-    query_params = QueryParams.parse(ecto_query, params, pk)
+    query_params = QueryParams.parse_conditions(ecto_query, params, pk)
     updates = QueryParams.parse_update(ecto_query, params, pk)
 
     %QueryInfo{
@@ -191,14 +200,22 @@ defmodule Ravix.Ecto.Parser.QueryParser do
     }
   end
 
-  defp find_all_query(raven_query, ecto_query, query_params, projection, pk, model) do
+  defp find_all_query(
+         raven_query,
+         ecto_query,
+         query_conditions,
+         limit_params,
+         projection,
+         pk,
+         model
+       ) do
     raven_query
-    |> append_conditions(query_params)
+    |> append_conditions(query_conditions)
     |> append_default_where_if_missing()
     |> parse_projections(projection)
     |> parse_order(ecto_query, model, pk)
     |> parse_grouping(ecto_query, pk)
-    |> limit_skip(ecto_query, query_params, pk)
+    |> limit_skip(limit_params)
   end
 
   defp delete_all_query(raven_query, query_params) do
@@ -352,30 +369,16 @@ defmodule Ravix.Ecto.Parser.QueryParser do
 
   defp limit_skip(
          %RavenQuery{} = raven_query,
-         %EctoQuery{limit: limit, offset: offset} = query,
-         params,
-         pk
-       ) do
-    case limit == nil and offset == nil do
-      true ->
-        raven_query
+         nil
+       ),
+       do: raven_query
 
-      false ->
-        RavenQuery.limit(
-          raven_query,
-          offset_limit(offset, params, pk, query, "offset clause"),
-          offset_limit(limit, params, pk, query, "limit clause")
-        )
-    end
-  end
-
-  defp offset_limit(nil, _params, _pk, _query, _where), do: 0
-
-  defp offset_limit(%EctoQuery.LimitExpr{expr: expr}, params, pk, query, where),
-    do: value(expr, params, pk, query, where)
-
-  defp offset_limit(%EctoQuery.QueryExpr{expr: expr}, params, pk, query, where),
-    do: value(expr, params, pk, query, where)
+  defp limit_skip(
+         %RavenQuery{} = raven_query,
+         limit: limit,
+         offset: offset
+       ),
+       do: RavenQuery.limit(raven_query, offset, limit)
 
   defp order_by_expr({:asc, expr}, model, pk, query),
     do: order_by_expr(expr, :asc, model, pk, query)

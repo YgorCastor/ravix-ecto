@@ -3,7 +3,7 @@ defmodule Ravix.Ecto.Parser.QueryParams do
 
   alias Ecto.Query, as: EctoQuery
 
-  def parse(%EctoQuery{wheres: wheres} = query, params, pk) do
+  def parse_conditions(%EctoQuery{wheres: wheres} = query, params, pk) do
     wheres
     |> Enum.map(fn %EctoQuery.BooleanExpr{expr: expr} ->
       pair(expr, params, pk, query, "where clause")
@@ -13,14 +13,24 @@ defmodule Ravix.Ecto.Parser.QueryParams do
     |> map_unless_empty
   end
 
-  def parse([{_, _} | _] = fields, keys, pk) do
+  def parse_conditions([{_, _} | _] = fields, keys, pk) do
     fields
     |> Keyword.take(keys)
-    |> parse(pk)
+    |> parse_conditions(pk)
   end
 
-  def parse(filter, pk) do
+  def parse_conditions(filter, pk) do
     filter |> value(pk, "where clause") |> map_unless_empty
+  end
+
+  def parse_limit_and_offset(%EctoQuery{limit: limit, offset: offset}, params) do
+    case limit == nil and offset == nil do
+      true ->
+        nil
+
+      false ->
+        [limit: offset_limit(limit, params), offset: offset_limit(offset, params)]
+    end
   end
 
   def parse_update(%EctoQuery{updates: updates} = query, params, pk) do
@@ -31,6 +41,14 @@ defmodule Ravix.Ecto.Parser.QueryParams do
     |> :lists.flatten()
     |> merge_keys(query, "update clause")
   end
+
+  defp offset_limit(nil, _), do: 0
+
+  defp offset_limit(%{expr: {:^, [], [pos]}}, params),
+    do: elem(params, pos)
+
+  defp offset_limit(%{expr: value}, _),
+    do: value
 
   defp merge_keys(keyword, query, place) do
     Enum.reduce(keyword, %{}, fn {key, value}, acc ->
