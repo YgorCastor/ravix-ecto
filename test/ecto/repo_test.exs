@@ -441,6 +441,15 @@ defmodule Ecto.Integration.RepoTest do
       assert_raise Ecto.NoResultsError, fn -> query |> last |> TestRepo.one!() end
     end
 
+    test "limit and offset" do
+      post1 = TestRepo.insert!(%Post{title: "1"})
+      post2 = TestRepo.insert!(%Post{title: "2"})
+
+      query = from(p in Post)
+      assert post1 == query |> limit(1) |> offset(0) |> TestRepo.one()
+      assert post2 == query |> limit(1) |> offset(1) |> TestRepo.one()
+    end
+
     test "exists? should work" do
       TestRepo.insert!(%Post{title: "1", visits: 2})
       TestRepo.insert!(%Post{title: "2", visits: 1})

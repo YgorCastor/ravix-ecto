@@ -16,9 +16,9 @@ defmodule Ravix.Ecto.Storage do
   def storage_down(opts) do
     {:ok, _apps} = Application.ensure_all_started(:ravix)
     store = Keyword.get(opts, :store)
-    {:ok, %{database: database_name}} = Connection.fetch_state(store)
+    {:ok, state} = Connection.fetch_state(store)
 
-    case Maintenance.delete_database(store, database_name) do
+    case Maintenance.delete_database(state) do
       {:ok, _} -> :ok
       err -> err
     end
@@ -28,8 +28,9 @@ defmodule Ravix.Ecto.Storage do
   def storage_status(opts) do
     {:ok, _apps} = Application.ensure_all_started(:ravix)
     store = Keyword.get(opts, :store)
+    {:ok, state} = Connection.fetch_state(store)
 
-    case Maintenance.database_stats(store) do
+    case Maintenance.database_stats(state) do
       {:ok, _} -> :up
       _ -> :down
     end

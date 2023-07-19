@@ -45,6 +45,7 @@ defmodule Ecto.Integration.Case do
   end
 
   setup do
+    _ = start_supervised!({Finch, name: Ravix.Finch})
     _ = start_supervised!(TestRepo)
 
     {:ok, session_id} = TestStore.open_session()

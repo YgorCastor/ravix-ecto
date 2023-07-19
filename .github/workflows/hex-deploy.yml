@@ -11,7 +11,7 @@ jobs:
     env:
       MIX_ENV: dev
     container:
-      image: elixir:1.13.3-alpine
+      image: elixir:1.14.4-alpine
     steps:
       - name: Install Git/Curl/GNU Tar
         run: apk add --no-cache curl tar git make gcc libc-dev g++

@@ -371,6 +371,9 @@ defmodule Ravix.Ecto.Parser.QueryParser do
 
   defp offset_limit(nil, _params, _pk, _query, _where), do: 0
 
+  defp offset_limit(%EctoQuery.LimitExpr{expr: expr}, params, pk, query, where),
+    do: value(expr, params, pk, query, where)
+
   defp offset_limit(%EctoQuery.QueryExpr{expr: expr}, params, pk, query, where),
     do: value(expr, params, pk, query, where)
 

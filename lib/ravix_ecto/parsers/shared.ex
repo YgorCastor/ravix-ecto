@@ -49,7 +49,7 @@ defmodule Ravix.Ecto.Parser.Shared do
     end
   end
 
-  @not_supported ~w(lock joins havings offset)a
+  @not_supported ~w(lock joins havings)a
   @query_empty_values %Ecto.Query{} |> Map.take(@not_supported)
 
   def check_query!(query, allow \\ []) do
