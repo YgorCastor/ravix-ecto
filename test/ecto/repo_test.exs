@@ -23,7 +23,7 @@ defmodule Ecto.Integration.RepoTest do
 
   describe "Queries without associations" do
     test "should fetch all with in clause" do
-      TestRepo.insert!(%Post{title: "hello"})
+      TestRepo.insert!(%Post{title: "hello", cost: 10})
 
       assert_raise Ecto.Query.CastError, fn ->
         TestRepo.all(from(p in Post, where: p.title in ^nil))
@@ -595,7 +595,10 @@ defmodule Ecto.Integration.RepoTest do
         )
 
       assert {1, _} =
-               TestRepo.insert_all(Post, source, conflict_target: [:id], on_conflict: :replace_all)
+               TestRepo.insert_all(Post, source,
+                 conflict_target: [:id],
+                 on_conflict: :replace_all
+               )
 
       expected_id = id + 1
       expected_title = "A generic title suffix #{id}"

@@ -53,7 +53,7 @@ defmodule Ravix.Ecto.Adapter do
 
   defdelegate update(repo, meta, fields, filters, returning, opts), to: @schema
 
-  defdelegate delete(adapter_meta, schema_meta, filters, options), to: @schema
+  defdelegate delete(adapter_meta, schema_meta, filters, returning, options), to: @schema
 
   defdelegate storage_up(opts), to: @storage
 
