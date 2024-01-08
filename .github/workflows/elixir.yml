@@ -12,8 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MIX_ENV: test
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     container:
-      image: elixir:1.14.4-alpine
+      image: hexpm/elixir:1.16.0-erlang-26.2.1-alpine-3.17.5
     services:
       ravendb:
         image: ravendb/ravendb
@@ -24,9 +27,6 @@ jobs:
           RAVEN_License_Eula_Accepted: "true"
           RAVEN_Security_UnsecuredAccessAllowed: "PublicNetwork"
     steps:
-      - uses: technote-space/auto-cancel-redundant-job@v1
-        with:
-          EXCLUDE_MERGED: "true"
       - name: Install Git/Curl/GNU Tar
         run: apk add --no-cache curl tar git make gcc libc-dev g++
       - name: Fix git permissions
@@ -41,10 +41,10 @@ jobs:
           path: |
             _build
             deps
-          key: ${{ runner.os }}-01-build-${{ hashFiles('mix.lock') }}
+          key: ${{ runner.os }}-02-build-${{ hashFiles('mix.lock') }}
           restore-keys: |
-            ${{ runner.os }}-01-build-${{ hashFiles('mix.lock') }}
-            ${{ runner.os }}-01-build-
+            ${{ runner.os }}-02-build-${{ hashFiles('mix.lock') }}
+            ${{ runner.os }}-02-build-
       # - name: Dyalizer Cache
       #   uses: actions/cache@v3
       #   id: mix-dialyzer
