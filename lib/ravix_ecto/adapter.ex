@@ -67,15 +67,24 @@ defmodule Ravix.Ecto.Planner do
     [type]
   end
 
+  defp load_time(nil), do: {:ok, nil}
   defp load_time(time), do: Time.from_iso8601(time)
+
+  defp load_date(nil), do: {:ok, nil}
 
   defp load_date(date) do
     date |> Date.from_iso8601()
   end
 
+  defp load_naive_datetime(nil) do
+    {:ok, nil}
+  end
+
   defp load_naive_datetime(datetime) when is_bitstring(datetime) do
     {:ok, NaiveDateTime.from_iso8601!(datetime)}
   end
+
+  defp load_datetime(nil), do: {:ok, nil}
 
   defp load_datetime(datetime) when is_bitstring(datetime) do
     {:ok, utc_date_time, _} = DateTime.from_iso8601(datetime)
@@ -88,6 +97,10 @@ defmodule Ravix.Ecto.Planner do
 
   defp load_integer(map) do
     {:ok, map}
+  end
+
+  defp load_binary(nil, _) do
+    {:ok, nil}
   end
 
   defp load_binary(binary, :ecto_uuid) do
@@ -111,6 +124,12 @@ defmodule Ravix.Ecto.Planner do
     {:ok, id}
   end
 
+  defp load_id(nil) do
+    {:ok, nil}
+  end
+
+  def load_decimal(nil), do: {:ok, nil}
+
   def load_decimal(decimal) do
     Decimal.cast(decimal)
   end
@@ -129,9 +148,12 @@ defmodule Ravix.Ecto.Planner do
   def dumpers(:decimal, type), do: [type, &dump_decimal/1]
   def dumpers(_base, type), do: [type]
 
+  defp dump_time(nil), do: {:ok, nil}
   defp dump_time({h, m, s, _}), do: Time.from_erl({h, m, s})
   defp dump_time(%Time{} = time), do: {:ok, time}
   defp dump_time(_), do: :error
+
+  defp dump_date(nil), do: {:ok, nil}
 
   defp dump_date({_, _, _} = date) do
     dt =
@@ -145,6 +167,8 @@ defmodule Ravix.Ecto.Planner do
   defp dump_date(%Date{} = date) do
     {:ok, date}
   end
+
+  defp dump_utc_datetime(nil), do: {:ok, nil}
 
   defp dump_utc_datetime({{_, _, _} = date, {h, m, s, ms}}) do
     datetime =
@@ -167,6 +191,8 @@ defmodule Ravix.Ecto.Planner do
   defp dump_utc_datetime(datetime) do
     {:ok, datetime}
   end
+
+  defp dump_naive_datetime(nil), do: {:ok, nil}
 
   defp dump_naive_datetime({{_, _, _} = date, {h, m, s, ms}}) do
     datetime =
@@ -193,6 +219,8 @@ defmodule Ravix.Ecto.Planner do
     {:ok, datetime}
   end
 
+  defp dump_binary(nil, _), do: {:ok, nil}
+
   defp dump_binary(binary, :ecto_uuid) when is_binary(binary) do
     Ecto.UUID.load(binary)
   end
@@ -201,13 +229,19 @@ defmodule Ravix.Ecto.Planner do
     {:ok, Enum.join(for <<c::utf8 <- binary>>, do: <<c::utf8>>)}
   end
 
+  defp dump_objectid(nil), do: {:ok, nil}
+
   defp dump_objectid(objectid) do
     {:ok, objectid}
   end
 
+  defp dump_id(nil), do: {:ok, nil}
+
   defp dump_id(id) when is_integer(id) do
     {:ok, id}
   end
+
+  def dump_decimal(nil), do: {:ok, nil}
 
   def dump_decimal(decimal) when is_number(decimal) do
     {:ok, Integer.to_string(decimal)}

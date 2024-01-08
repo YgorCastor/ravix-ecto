@@ -63,7 +63,7 @@ defmodule Ravix.Ecto.Schema do
   end
 
   @impl Ecto.Adapter.Schema
-  def delete(adapter_meta, %{schema: schema}, filters, _options) do
+  def delete(adapter_meta, %{schema: schema}, filters, _returning, _options) do
     pk = primary_key(schema)
 
     case Executor.delete_one(adapter_meta, filters, pk) do
@@ -74,9 +74,10 @@ defmodule Ravix.Ecto.Schema do
 
   @impl Ecto.Adapter.Schema
   def autogenerate(:binary_id), do: UUID.uuid4()
-  def autogenerate(:embed_id),do: UUID.uuid4()
-  def autogenerate(:id), do: raise "[RAVIX-ECTO] RavenDB does not support auto-generated integer ids!"
+  def autogenerate(:embed_id), do: UUID.uuid4()
 
+  def autogenerate(:id),
+    do: raise("[RAVIX-ECTO] RavenDB does not support auto-generated integer ids!")
 
   defp returning_fields_for_list(_adapter_meta, _schema_meta, _result, [], _primary_key, _opts),
     do: nil
